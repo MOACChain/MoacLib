@@ -24,7 +24,7 @@ import (
 	"github.com/MOACChain/MoacLib/common"
 	"github.com/MOACChain/MoacLib/crypto/sha3"
 	"github.com/MOACChain/MoacLib/log"
-	"github.com/rcrowley/go-metrics"
+	"github.com/MOACChain/MoacLib/metrics"
 )
 
 var (
