@@ -42,7 +42,7 @@ import (
 	"fmt"
 	"hash"
 
-	ethcrypto "github.com/MOACChain/MoacLib/crypto"
+	ethcrypto "github.com/innowells/moac-lib/crypto"
 )
 
 var (

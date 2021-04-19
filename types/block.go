@@ -1,20 +1,20 @@
-// Copyright 2017  The MOAC Foundation
-// This file is part of the go-ethereum library.
+// Copyright 2014 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package types contains TxData types related to MOAC vnode consensus.
+// Package types contains TxData types related to MoacNode consensus.
 package types
 
 import (
@@ -26,10 +26,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/MOACChain/MoacLib/common"
-	"github.com/MOACChain/MoacLib/common/hexutil"
-	"github.com/MOACChain/MoacLib/log"
-	"github.com/MOACChain/MoacLib/rlp"
+	"github.com/innowells/moac-lib/common"
+	"github.com/innowells/moac-lib/common/hexutil"
+	"github.com/innowells/moac-lib/log"
+	"github.com/innowells/moac-lib/rlp"
 )
 
 var (
@@ -388,15 +388,6 @@ func (b *Block) String() string {
 	bHashNoNonce := bHeader.HashNoNonce()
 	bTransactions := b.transactions
 	bUncles := b.uncles
-	//	str := fmt.Sprintf(`Block(#%v): Size: %v {
-	//MinerHash: %x
-	//%v
-	//Transactions:
-	//%v
-	//Uncles:
-	//%v
-	//}
-	//`, b.Number(), b.Size(), b.header.HashNoNonce(), b.header, b.transactions, b.uncles)
 	str := fmt.Sprintf(`Block(#%v): Size: %v {
 MinerHash: %x
 %v

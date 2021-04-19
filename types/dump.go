@@ -1,27 +1,17 @@
-// Copyright 2017  The MOAC Foundation
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package types
 
 import (
 	"strconv"
-
-	"github.com/MOACChain/MoacLib/common"
-	pb "github.com/MOACChain/MoacLib/proto"
+	"github.com/innowells/moac-lib/common"
+	pb "github.com/innowells/moac-lib/proto"
 )
+
+// type ContractInfoReq struct {
+// 	Reqtype      int//查询类型0: 查看合约全部变量 , 1: 查看合约某一个数组变量 , 2: 查看合约某一个mapping变量 , 3: 查看合约某一个结构体变量, 4: 查看合约某一简单类型变量（单倍长度存储的变量）, 5: 查看合约某一变长变量（如string、bytes）
+// 	Key          string//64位定长十六进制字符串，查询的变量在合约里面的index ，查询全部变量时可以不填
+// 	Position     string//64位定长十六进制字符串，当Reqtype==1时，Position为数组里第几个变量（从0开始）；当Reqtype==2时，Position为mapping下标
+// 	Structformat []byte//当出现结构体变量时，此变量描述结构，结构体只允许出现1-single（简单类型变量单倍长度存储的变量）, 2-list（简单类型数组变量）, 3-string变长变量（如string、bytes），若结构变量为ContractInfoReq，Structformat = []byte{‘1’,’3’,’3’,’3’}
+// }
 
 type GetContractInfoReq struct {
 	SubChainAddr common.Address
@@ -85,7 +75,7 @@ func ScreeningStorage(storage map[string]string, request []*pb.StorageRequest) m
 									if nlen < 7 {
 										num, _ := strconv.ParseInt(storage[key0][2:], 16, 64)
 										key1 := common.KeytoKey(key0)
-										for i := num - 1; i > 0; {
+										for i := num -1; i > 0; {
 											resp[key1] = storage[key1]
 											key1 = common.IncreaseHexByOne(key1)
 											i = i - 64
@@ -112,7 +102,7 @@ func ScreeningStorage(storage map[string]string, request []*pb.StorageRequest) m
 							if nlen < 7 {
 								num, _ := strconv.ParseInt(storage[key0][2:], 16, 64)
 								key1 := common.KeytoKey(key0)
-								for i := num - 1; i > 0; {
+								for i := num -1; i > 0; {
 									if storage[key1] != "" {
 										resp[key1] = storage[key1]
 									}
@@ -163,7 +153,7 @@ func ScreeningStorage(storage map[string]string, request []*pb.StorageRequest) m
 								if nlen < 7 {
 									num, _ := strconv.ParseInt(storage[key0][2:], 16, 64)
 									key1 := common.KeytoKey(key0)
-									for i := num - 1; i > 0; {
+									for i := num -1; i > 0; {
 										resp[key1] = storage[key1]
 										key1 = common.IncreaseHexByOne(key1)
 										i = i - 64
@@ -190,7 +180,7 @@ func ScreeningStorage(storage map[string]string, request []*pb.StorageRequest) m
 						if nlen < 7 {
 							num, _ := strconv.ParseInt(storage[key0][2:], 16, 64)
 							key1 := common.KeytoKey(key0)
-							for i := num - 1; i > 0; {
+							for i := num -1; i > 0; {
 								if storage[key1] != "" {
 									resp[key1] = storage[key1]
 								}
@@ -238,7 +228,7 @@ func ScreeningStorage(storage map[string]string, request []*pb.StorageRequest) m
 							if nlen < 7 {
 								num, _ := strconv.ParseInt(storage[key0][2:], 16, 64)
 								key1 := common.KeytoKey(key0)
-								for i := num - 1; i > 0; {
+								for i := num -1; i > 0; {
 									resp[key1] = storage[key1]
 									key1 = common.IncreaseHexByOne(key1)
 									i = i - 64
@@ -265,7 +255,7 @@ func ScreeningStorage(storage map[string]string, request []*pb.StorageRequest) m
 					if nlen < 7 {
 						num, _ := strconv.ParseInt(storage[key0][2:], 16, 64)
 						key1 := common.KeytoKey(key0)
-						for i := num - 1; i > 0; {
+						for i := num -1; i > 0; {
 							if storage[key1] != "" {
 								resp[key1] = storage[key1]
 							}
@@ -309,7 +299,7 @@ func ScreeningStorage(storage map[string]string, request []*pb.StorageRequest) m
 						if nlen < 7 {
 							num, _ := strconv.ParseInt(storage[key0][2:], 16, 64)
 							key1 := common.KeytoKey(key0)
-							for i := num - 1; i > 0; {
+							for i := num -1; i > 0; {
 								resp[key1] = storage[key1]
 								key1 = common.IncreaseHexByOne(key1)
 								i = i - 64
@@ -336,7 +326,7 @@ func ScreeningStorage(storage map[string]string, request []*pb.StorageRequest) m
 				if nlen < 7 {
 					num, _ := strconv.ParseInt(storage[key][2:], 16, 64)
 					key0 := common.KeytoKey(key)
-					for i := num - 1; i > 0; {
+					for i := num -1; i > 0; {
 						resp[key0] = storage[key0]
 						key0 = common.IncreaseHexByOne(key0)
 						i = i - 64

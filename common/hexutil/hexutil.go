@@ -1,18 +1,18 @@
-// Copyright 2017  The MOAC Foundation
-// This file is part of the go-ethereum library.
+// Copyright 2016 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 /*
 Package hexutil implements hex encoding with 0x prefix.
@@ -37,7 +37,7 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/MOACChain/MoacLib/log"
+	"github.com/innowells/moac-lib/log"
 )
 
 const uintBits = 32 << (uint64(^uint(0)) >> 63)
@@ -70,12 +70,29 @@ func (err decError) Error() string {
 // Add check for the base58 encoding string
 func Decode(input string) ([]byte, error) {
 	log.Info("[common/hexutil/hexutil.go->Decode] " + string(input))
+	// fmt.Printf("Decode hexutil %d, %s", len(input), input)
 	if len(input) == 0 {
 		return nil, ErrEmptyString
 	}
 	//
 	if !has0xPrefix(input) {
+		//if len(input) < 40 {
+		// if input[0] == 'm' {
+
+		// 	res, outVersion, err := base58util.MoacDecode(input)
+
+		// 	if err != nil {
+		// 		log.Debugf("Decode address as MOAC address failed")
+		// 		return nil, err
+		// 	} else if outVersion != MoacVersion {
+		// 		//fmt.Printf("MOAC version mismatch: %X .vs. %X\n", outVersion, MoacVersion)
+		// 		return nil, ErrMoacVersion
+		// 	}
+		// 	return res, err
+
+		// } else {
 		return nil, ErrMissingPrefix
+		// }
 	}
 
 	//decode the string start with '0x'

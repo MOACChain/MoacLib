@@ -1,18 +1,18 @@
-// Copyright 2017  The MOAC Foundation
-// This file is part of the go-ethereum library.
+// Copyright 2015 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 package common
 
@@ -25,30 +25,31 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MOACChain/MoacLib/common/hexutil"
-	"github.com/MOACChain/MoacLib/crypto/sha3"
-	"github.com/MOACChain/MoacLib/log"
-	"github.com/MOACChain/MoacLib/rlp"
+	"github.com/holiman/uint256"
+	"github.com/innowells/moac-lib/common/base58util"
+	"github.com/innowells/moac-lib/common/hexutil"
+	"github.com/innowells/moac-lib/crypto/sha3"
+	"github.com/innowells/moac-lib/log"
+	"github.com/innowells/moac-lib/rlp"
 )
 
-// Lengths of hashes and addresses in bytes.
 const (
-	// HashLength is the expected length of the hash
-	HashLength = 32
-
-	// AddressLength is the expected length of the adddress
+	HashLength    = 32
 	AddressLength = 20
+
+	MoacAddressLength = 32
+	MoacVersion       = 0
 )
 
 var (
 	hashT    = reflect.TypeOf(Hash{})
 	addressT = reflect.TypeOf(Address{})
+	//moacaddressT = reflect.TypeOf(MoacAddress{})
 )
 
 // Hash represents the 32 byte Keccak256 hash of arbitrary data.
 type Hash [HashLength]byte
 
-// RlpHash encode the input data with rlp and return the hash of encoded data
 func RlpHash(x interface{}) (h Hash) {
 	hw := sha3.NewKeccak256()
 	rlp.Encode(hw, x)
@@ -56,16 +57,15 @@ func RlpHash(x interface{}) (h Hash) {
 	return h
 }
 
-// BytesToHash sets b to hash.
-// If b is larger than len(h), b will be cropped from the left.
 func BytesToHash(b []byte) Hash {
 	var h Hash
 	h.SetBytes(b)
 	return h
 }
-func StringToHash(s string) Hash { return BytesToHash([]byte(s)) }
-func BigToHash(b *big.Int) Hash  { return BytesToHash(b.Bytes()) }
-func HexToHash(s string) Hash    { return BytesToHash(FromHex(s)) }
+func StringToHash(s string) Hash        { return BytesToHash([]byte(s)) }
+func BigToHash(b *big.Int) Hash         { return BytesToHash(b.Bytes()) }
+func Uint256ToHash(b *uint256.Int) Hash { return BytesToHash(b.Bytes()) }
+func HexToHash(s string) Hash           { return BytesToHash(FromHex(s)) }
 
 // Get the string representation of the underlying hash
 func (h Hash) Str() string   { return string(h[:]) }
@@ -109,7 +109,7 @@ func (h Hash) MarshalText() ([]byte, error) {
 	return hexutil.Bytes(h[:]).MarshalText()
 }
 
-// SetBytes sets the hash to the value of b. If b is larger than len(h), 'b' will be cropped (from the left).
+// Sets the hash to the value of b. If b is larger than len(h), 'b' will be cropped (from the left).
 func (h *Hash) SetBytes(b []byte) {
 	if len(b) > len(h) {
 		b = b[len(b)-HashLength:]
@@ -118,10 +118,10 @@ func (h *Hash) SetBytes(b []byte) {
 	copy(h[HashLength-len(b):], b)
 }
 
-// SetString sets string `s` to h. If s is larger than len(h) s will be cropped (from left) to fit.
+// Set string `s` to h. If s is larger than len(h) s will be cropped (from left) to fit.
 func (h *Hash) SetString(s string) { h.SetBytes([]byte(s)) }
 
-// Set sets h to other
+// Sets h to other
 func (h *Hash) Set(other Hash) {
 	for i, v := range other {
 		h[i] = v
@@ -137,7 +137,6 @@ func (h Hash) Generate(rand *rand.Rand, size int) reflect.Value {
 	return reflect.ValueOf(h)
 }
 
-// EmptyHash verifies whether the input HASH is a empty hash or not.
 func EmptyHash(h Hash) bool {
 	return h == Hash{}
 }
@@ -158,22 +157,54 @@ func (h UnprefixedHash) MarshalText() ([]byte, error) {
 
 /////////// Address
 
-// Address represents the 20 byte address of a MOAC account.
+// Address represents the 20 byte address of an MoacNode account.
 type Address [AddressLength]byte
 
-// BytesToAddress converts the byte array to Address
 func BytesToAddress(b []byte) Address {
 	var a Address
 	a.SetBytes(b)
 	return a
 }
 
-func StringToAddress(s string) Address { return BytesToAddress([]byte(s)) }
-func BigToAddress(b *big.Int) Address  { return BytesToAddress(b.Bytes()) }
-func HexToAddress(s string) Address    { return BytesToAddress(FromHex(s)) }
+func StringToAddress(s string) Address        { return BytesToAddress([]byte(s)) }
+func BigToAddress(b *big.Int) Address         { return BytesToAddress(b.Bytes()) }
+func Uint256ToAddress(b *uint256.Int) Address { return BytesToAddress(b.Bytes()) }
+func HexToAddress(s string) Address           { return BytesToAddress(FromHex(s)) }
+
+//Decode the input string using base 58 encoding
+//if the input string has the right length.
+
+func Base58ToAddress(s string) Address {
+	if len(s) == MoacAddressLength {
+		// fmt.Println("Input length match")
+
+		res, outVersion, err := base58util.MoacDecode(s)
+
+		if err != nil {
+			fmt.Println("Decode address as MOAC address failed", err)
+
+		} else if outVersion != MoacVersion {
+			fmt.Printf("MOAC address version mismatch: %X .vs. %X\n", outVersion, MoacVersion)
+
+		}
+		//TODO, handle the error in the decoding process
+		outAddr := BytesToAddress(res)
+		// fmt.Println("MOAC address returned as:", outAddr.Hex())
+		return outAddr
+	} else if IsHexAddress(s) {
+		// fmt.Println("Input address is HEX! Try to convert......")
+		return HexToAddress(s)
+
+	} else {
+		//If not the right length, try other functions to
+		//crate the address
+		// fmt.Println("Not MOAC or HEX, try string!")
+		return StringToAddress(s)
+	}
+}
 
 // IsHexAddress verifies whether a string can represent a valid hex-encoded
-// MOAC address or not.
+// MoacNode address or not.
 func IsHexAddress(s string) bool {
 	if len(s) == 2+2*AddressLength && IsHex(s) {
 		return true
@@ -241,12 +272,15 @@ func (a Address) HexWithout0x() string {
 
 // String implements the stringer interface and is used also by the logger.
 func (a Address) String() string {
+	//fmt.Println("Use interface String types.go")
+	// return a.GetBase58Str()
 	return a.Hex()
 }
 
 // Format implements fmt.Formatter, forcing the byte slice to be formatted as is,
 // without going through the stringer interface used for logging.
 func (a Address) Format(s fmt.State, c rune) {
+	// fmt.Println("Use interface format types.go")
 	fmt.Fprintf(s, "%"+string(c), a[:])
 }
 
@@ -289,6 +323,11 @@ func (a *Address) UnmarshalJSON(input []byte) error {
 		inputStr = inputStr[:len(inputStr)-1]
 	}
 	log.Debugf("[common/types.go->Address.UnmarshalJSON] input=" + inputStr)
+	// if IsMoacAddress(inputStr) {
+	// 	log.Debugf("It is a Moac address.")
+	// 	a.Set(MoacToAddress(inputStr))
+	// 	return nil
+	// }
 	return hexutil.UnmarshalFixedJSON(addressT, input, a[:])
 }
 
@@ -305,6 +344,109 @@ func (a *UnprefixedAddress) UnmarshalText(input []byte) error {
 // MarshalText encodes the address as hex.
 func (a UnprefixedAddress) MarshalText() ([]byte, error) {
 	return []byte(hex.EncodeToString(a[:])), nil
+}
+
+/////////// MOAC Address
+// Updated with prefix byte(1) and checksum bytes (4)
+
+// MOAC Address represents the base58 encoding of 20 byte address of the account.
+// Change to PrefixAddress
+//
+type MoacAddress string
+
+// IsMoacAddress verifies whether a string can represent a valid base58-encoded
+// MOAC account address
+
+//
+// Check if the input string is a valid
+// MOAC encoded address, contract address
+// or secret
+
+func IsMoacAddress(data string) bool {
+
+	// log.Debugf("Input data length IsMoacAddress:%v", len(data))
+	if len(data) <= MoacAddressLength {
+
+		res, outVersion, err := base58util.MoacDecode(data)
+
+		if err != nil {
+			log.Debug("Decode address as MOAC address failed")
+			return false
+		} else if outVersion != MoacVersion {
+			log.Debug("MOAC address version mismatch: %X .vs. %X\n", outVersion, MoacVersion)
+			return false
+		}
+		outAddr := BytesToAddress(res)
+		log.Debug("MOAC address returned as:" + outAddr.Hex())
+		return IsHexAddress(outAddr.Hex())
+	}
+	//fmt.Println("Input length not match!!!")
+	return false
+}
+
+func BytesToMoacAddress(b []byte) MoacAddress {
+
+	val := base58util.MoacEncode(b, MoacVersion)
+	return MoacAddress(val)
+}
+
+//Conver input HEX string to MOAC address
+func HexToMoac(in_str string) MoacAddress {
+
+	b := FromHex(in_str)
+	val := base58util.MoacEncode(b, MoacVersion)
+	// fmt.Printf("HEXTOMOAC: %s\n", val)
+	return MoacAddress(val)
+}
+
+// Get the string representation of the underlying address
+func (a MoacAddress) Str() string   { return string(a) }
+func (a MoacAddress) Big() *big.Int { return new(big.Int).SetBytes(a.Bytes()) }
+
+//func (a MoacAddress) Hash() Hash    { return BytesToHash(a[:]) }
+
+//Convert the base58 based address to HEX address as string
+func (a MoacAddress) Hex() string {
+	//decode the moac address into byte array
+	res, outVersion, err := base58util.MoacDecode(string(a))
+
+	if err != nil {
+		fmt.Println("Error: ", err)
+		return ""
+
+	} else if outVersion == MoacVersion {
+		return hexutil.Encode(res)
+
+	} else {
+		return "0x" + hexutil.Encode(res)
+	}
+
+}
+
+//
+func (a MoacAddress) Bytes() []byte {
+	//decode the moac address into byte array
+	res, outVersion, err := base58util.MoacDecode(a.Str())
+
+	if err == nil && outVersion == MoacVersion {
+		return res
+	}
+	return nil
+}
+
+//Convert the Moac address to HEX address
+func MoacToAddress(inadd string) Address {
+
+	res, outVersion, err := base58util.MoacDecode(inadd)
+
+	var result Address
+
+	if err == nil && outVersion == MoacVersion {
+		result = BytesToAddress([]byte(res))
+	}
+
+	//Set the err code if version does not fit the current version
+	return result
 }
 
 func KeytoKey(key string) string {

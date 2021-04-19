@@ -1,18 +1,18 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 package types
 
@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/MOACChain/MoacLib/common/hexutil"
-	"github.com/MOACChain/MoacLib/crypto"
-	"github.com/MOACChain/MoacLib/log"
+	"github.com/innowells/moac-lib/common/hexutil"
+	"github.com/innowells/moac-lib/crypto"
+	"github.com/innowells/moac-lib/log"
 )
 
 type bytesBacked interface {
@@ -89,7 +89,7 @@ func (b Bloom) MarshalText() ([]byte, error) {
 
 // UnmarshalText b as a hex string with 0x prefix.
 func (b *Bloom) UnmarshalText(input []byte) error {
-	log.Info("[core/types/bloom9.go->Bloom.UnmarshalText] input=" + string(input))
+	log.Info("[core/types/bloom9.go->Bloom.UnmarshalText] input="+string(input))
 	return hexutil.UnmarshalFixedText("Bloom", input, b[:])
 }
 

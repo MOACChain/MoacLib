@@ -1,18 +1,18 @@
-// Copyright 2017  The MOAC Foundation
-// This file is part of the go-ethereum library.
+// Copyright 2014 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 package rlp
 
@@ -34,18 +34,18 @@ func TestStreamKind(t *testing.T) {
 		wantKind Kind
 		wantLen  uint64
 	}{
-		{"00", Byte, 0},
-		{"01", Byte, 0},
-		{"7F", Byte, 0},
-		{"80", String, 0},
-		{"B7", String, 55},
-		{"B90400", String, 1024},
-		{"BFFFFFFFFFFFFFFFFF", String, ^uint64(0)},
-		{"C0", List, 0},
-		{"C8", List, 8},
-		{"F7", List, 55},
-		{"F90400", List, 1024},
-		{"FFFFFFFFFFFFFFFFFF", List, ^uint64(0)},
+		// {"00", Byte, 0},
+		// {"01", Byte, 0},
+		// {"7F", Byte, 0},
+		// {"80", String, 0},
+		// {"B7", String, 55},
+		// {"B90400", String, 1024},
+		// {"BFFFFFFFFFFFFFFFFF", String, ^uint64(0)},
+		// {"C0", List, 0},
+		// {"C8", List, 8},
+		// {"F7", List, 55},
+		// {"F90400", List, 1024},
+		// {"FFFFFFFFFFFFFFFFFF", List, ^uint64(0)},
 		{"f87f01808a3039353032663930303086323030623230947312f4b8a4457a36827f185325fd6b66a3f8bb8b9030313633343537383564386130303030008025a0ea4e8768cd1d60ed59dc4e3fd7a371d0edb166fa057bc83c0585ed30e1293c41a04c349910f262b5075de9258f3978b119f14c93f5b5b8a8d1a2af22f0c14ed2f7", List, 127},
 	}
 
@@ -63,6 +63,38 @@ func TestStreamKind(t *testing.T) {
 		if len != test.wantLen {
 			t.Errorf("test %d: len mismatch: got %d, want %d", i, len, test.wantLen)
 		}
+	}
+}
+
+/*
+ * This is to test an input with end
+ * { from: '0xa8863fc8Ce3816411378685223C03DAae9770ebB',
+        //  nonce: '0x16',
+        //  gasPrice: '0x09502f9000',
+        //  gasLimit: '0x5208',
+        //  to: '0x7312F4B8A4457a36827f185325Fd6B66a3f8BB8B',
+        //  value: '0x016345785d8a0000',
+        //  data: '0x00' }
+
+*/
+func TestInputCommandStream(t *testing.T) {
+	incmd := "f86c168509502f9000825208947312f4b8a4457a36827f185325fd6b66a3f8bb8b88016345785d8a0000001ba0c515be40cdaed29997219eb5fb1002ac03e35b8666ce84c3b9e181ad13760ea4a01eb2ded06283fb4663652120f031b5b0cef06b9cf0a831d3c2b5a158460790c1"
+	ls := NewListStream(bytes.NewReader(unhex(incmd)), 108)
+	if k, size, err := ls.Kind(); k != List || size != 108 || err != nil {
+		t.Errorf("Kind() returned (%v, %d, %v), expected (List, 3, nil)", k, size, err)
+	}
+
+	if size, err := ls.List(); size != 108 || err != nil {
+		t.Errorf("List() returned (%d, %v), expected (108, nil)", size, err)
+	}
+
+	for i := 0; i < 3; i++ {
+		if val, err := ls.Uint(); val != 1 || err != nil {
+			t.Errorf("Uint() returned (%d, %v), expected (1, nil)", val, err)
+		}
+	}
+	if err := ls.ListEnd(); err != nil {
+		t.Errorf("ListEnd() returned %v, expected (3, nil)", err)
 	}
 }
 
@@ -624,6 +656,133 @@ func TestDecodeStreamReset(t *testing.T) {
 		s.Reset(bytes.NewReader(input), 0)
 		return s.Decode(into)
 	})
+}
+
+type ethtxdata struct {
+	AccountNonce uint64   `json:"nonce"    gencodec:"required"`
+	Price        *big.Int `json:"gasPrice" gencodec:"required"`
+	GasLimit     *big.Int `json:"gas"      gencodec:"required"`
+	// Recipient    *common.Address `json:"to"       rlp:"nil"` // nil means contract creation
+	Amount  *big.Int `json:"value"    gencodec:"required"`
+	Payload []byte   `json:"input"    gencodec:"required"`
+
+	// Signature values
+	V *big.Int `json:"v" gencodec:"required"`
+	R *big.Int `json:"r" gencodec:"required"`
+	S *big.Int `json:"s" gencodec:"required"`
+
+	// This is only used when marshaling to JSON.
+	// Hash *common.Hash `json:"hash" rlp:"-"`
+}
+
+//2018/03/15
+//Revised data format, only use SystemContract and Sharding
+type txdata struct {
+	AccountNonce   uint64   `json:"nonce"    gencodec:"required"`
+	SystemContract uint64   `json:"syscnt" gencodec:"required"`
+	Price          *big.Int `json:"gasPrice" gencodec:"required"`
+	GasLimit       *big.Int `json:"gas"      gencodec:"required"`
+	// Recipient      *common.Address `json:"to"       rlp:"nil"` // nil means contract creation
+	Amount       *big.Int `json:"value"    gencodec:"required"`
+	Payload      []byte   `json:"input"    gencodec:"required"`
+	ShardingFlag uint64   `json:"shardingFlag" gencodec:"required"`
+	// Signature values
+	V *big.Int `json:"v" gencodec:"required"`
+	R *big.Int `json:"r" gencodec:"required"`
+	S *big.Int `json:"s" gencodec:"required"`
+
+	// This is only used when marshaling to JSON.
+	// Hash *common.Hash `json:"hash" rlp:"-"`
+}
+
+/*
+ * Original data decoder
+ */
+func TestMoacDataDecoder(t *testing.T) {
+
+	mctxformat := txdata{
+		AccountNonce:   0,
+		Recipient:      nil,
+		Payload:        nil,
+		Amount:         new(big.Int),
+		GasLimit:       new(big.Int),
+		Price:          new(big.Int),
+		SystemContract: 0,
+		ShardingFlag:   0,
+		V:              new(big.Int),
+		R:              new(big.Int),
+		S:              new(big.Int),
+	}
+	// cmd := "f87f01808a3039353032663930303086323030623230947312f4b8a4457a36827f185325fd6b66a3f8bb8b9030313633343537383564386130303030008025a0ea4e8768cd1d60ed59dc4e3fd7a371d0edb166fa057bc83c0585ed30e1293c41a04c349910f262b5075de9258f3978b119f14c93f5b5b8a8d1a2af22f0c14ed2f7"
+	//   cmd := "f87f01808a3039353032663930303086323030623230947312f4b8a4457a36827f185325fd6b66a3f8bb8b9030313633343537383564386130303030008025a0ea4e8768cd1d60ed59dc4e3fd7a371d0edb166fa057bc83c0585ed30e1293c41a04c349910f262b5075de9258f3978b119f14c93f5b5b8a8d1a2af22f0c14ed2f7"
+	//
+	// { from: '0xa8863fc8Ce3816411378685223C03DAae9770ebB',
+	// 	nonce: 4,
+	// 	gasPrice: 4000000,
+	// 	gasLimit: 2000,
+	// 	to: '0x7312F4B8A4457a36827f185325Fd6B66a3f8BB8B',
+	// 	value: '01100000000000000000',
+	// 	data: '0x12',
+	// 	shardingFlag: 0 }
+	// [ '0x04',
+	// '0x',
+	// '0x3d0900',
+	// '0x07d0',
+	// '0x7312f4b8a4457a36827f185325fd6b66a3f8bb8b',
+	// '0x3031313030303030303030303030303030303030',
+	// '0x12',
+	// '0x',
+	// '0x25',
+	// '0x4ae57512a74c26b0a7c282d1241093b774a24e1c9f1a425d756860da23a7249d',
+	// '0x16795a6164178063d3915a5f0e124648139ba11f714b19fc811277fc1f674c25' ]
+	cmd := "f86f01808509502f900083200b20947312f4b8a4457a36827f185325fd6b66a3f8bb8b880f43fc2c04ee0000008025a0dfa37f170535100ff2c6081c326406fec05d7f9b314dfe256af0bfef6c3ba421a01ff2ce9f8fe5167da27d3de416ddc4844572ca88b9735c39307b430d1e13926a"
+	addr := "0xa8863fc8Ce3816411378685223C03DAae9770ebB"
+	if err := Decode(bytes.NewReader(unhex(cmd)), &mctxformat); err != nil {
+		t.Fatalf("Decode error: %v", err)
+	} else {
+		fmt.Printf("Recipient:%v\n", mctxformat.Recipient.Hex())
+		fmt.Printf("TX nonce: %v\n", mctxformat.AccountNonce)
+		if addr != mctxformat.Recipient.Hex() {
+			fmt.Printf("Unmatch address!%v vs %v\n", addr, mctxformat.Recipient)
+		}
+
+		if mctxformat.AccountNonce != 1 {
+			fmt.Printf("TX:%v\n", mctxformat.Recipient)
+		}
+		fmt.Printf("Recipient:%v\n", mctxformat.Price)
+	}
+
+}
+
+/*
+ * This test can be used for changing transaction data format
+ * as defined in Moac-lib/transaction/transaction.go
+ * for correctly decoding the data
+ */
+func TestTransactionDataDecoder(t *testing.T) {
+	ethformat := ethtxdata{
+		AccountNonce: 0,
+		Recipient:    nil,
+		Payload:      nil,
+		Amount:       new(big.Int),
+		GasLimit:     new(big.Int),
+		Price:        new(big.Int),
+		V:            new(big.Int),
+		R:            new(big.Int),
+		S:            new(big.Int),
+	}
+	cmd := "f86601843b9aca00835d161494a8863fc8ce3816411378685223c03daae9770ebb821388001ba02ca8516dfa28afdf0931b7993100bbf2497e8dc0e29bf4b9847e0708f96c98a2a05a0ce782188b3f42e5ad8cdb7b1f701a04f2509039fecc1c2c350c33b389d7b2"
+	addr := "0xa8863fc8Ce3816411378685223C03DAae9770ebB"
+	if err := Decode(bytes.NewReader(unhex(cmd)), &ethformat); err != nil {
+		t.Fatalf("Decode error: %v", err)
+	} else {
+		fmt.Printf("Recipient:%v\n", ethformat.Recipient.Hex())
+		if addr != ethformat.Recipient.Hex() {
+			fmt.Println("Unmatch address!")
+		}
+		fmt.Printf("Recipient:%v\n", ethformat.Price)
+	}
+
 }
 
 type testDecoder struct{ called bool }

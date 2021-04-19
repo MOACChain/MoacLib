@@ -1,18 +1,18 @@
-// Copyright 2017  The MOAC Foundation
-// This file is part of the go-ethereum library.
+// Copyright 2014 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 package rlp
 
@@ -22,8 +22,6 @@ import (
 	"math/big"
 	"reflect"
 	"sync"
-
-	"github.com/MOACChain/MoacLib/log"
 )
 
 var (
@@ -353,64 +351,35 @@ var (
 
 // makeWriter creates a writer function for the given type.
 func makeWriter(typ reflect.Type, ts tags) (writer, error) {
-	logMsg := "[rlp/encode.go->makeWriter] "
 	kind := typ.Kind()
 	switch {
 	case typ == rawValueType:
-		logMsg += "rawValueType"
-		log.Debug(logMsg)
 		return writeRawValue, nil
 	case typ.Implements(encoderInterface):
-		logMsg += "typ.Implements(encoderInterface)"
-		log.Debug(logMsg)
 		return writeEncoder, nil
 	case kind != reflect.Ptr && reflect.PtrTo(typ).Implements(encoderInterface):
-		logMsg += "reflect.PtrTo(typ).Implements(encoderInterface)"
-		log.Debug(logMsg)
 		return writeEncoderNoPtr, nil
 	case kind == reflect.Interface:
-		logMsg += "reflect.Interface"
-		log.Debug(logMsg)
 		return writeInterface, nil
 	case typ.AssignableTo(reflect.PtrTo(bigInt)):
-		logMsg += "typ.AssignableTo(reflect.PtrTo(bigInt))"
-		log.Debug(logMsg)
 		return writeBigIntPtr, nil
 	case typ.AssignableTo(bigInt):
-		logMsg += "typ.AssignableTo(bigInt)"
-		log.Debug(logMsg)
 		return writeBigIntNoPtr, nil
 	case isUint(kind):
-		logMsg += "isUint(kind)"
-		log.Debug(logMsg)
 		return writeUint, nil
 	case kind == reflect.Bool:
-		logMsg += "reflect.Bool"
-		log.Debug(logMsg)
 		return writeBool, nil
 	case kind == reflect.String:
-		logMsg += "reflect.String"
-		log.Debug(logMsg)
 		return writeString, nil
 	case kind == reflect.Slice && isByte(typ.Elem()):
-		logMsg += "reflect.Slice"
-		log.Debug(logMsg)
 		return writeBytes, nil
 	case kind == reflect.Array && isByte(typ.Elem()):
-		logMsg += "reflect.Array"
-		log.Debug(logMsg)
 		return writeByteArray, nil
 	case kind == reflect.Slice || kind == reflect.Array:
-		logMsg += "kind == reflect.Slice || kind == reflect.Array"
-		log.Debug(logMsg)
 		return makeSliceWriter(typ, ts)
 	case kind == reflect.Struct:
-		logMsg += "reflect.Struct"
-		log.Debug(logMsg)
 		return makeStructWriter(typ)
 	case kind == reflect.Ptr:
-		logMsg += "reflect.Ptr"
-		log.Debug(logMsg)
 		return makePtrWriter(typ)
 	default:
 		return nil, fmt.Errorf("rlp: type %v is not RLP-serializable", typ)

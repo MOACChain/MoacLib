@@ -8,8 +8,88 @@ package bitutil
 
 import (
 	"bytes"
+	"encoding/binary"
+	"fmt"
 	"testing"
 )
+
+/*
+ * Used to handle Control Flag,
+ * SystemFlag 1000 0000 = 0x80 = 128
+ * QuesryFlag 0100 0000 = 0x40 = 64
+ * ShardingFlag 0010 0000 = 0x20 = 32
+ */
+func TestControlFlag(t *testing.T) {
+	// SystemFlag := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80}   //, 0x00, 0x00, 0x00}
+	// QueryFlag := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40}    //, 0x00, 0x00, 0x00}
+	// ShardingFlag := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20} // 0x00, 0x00, 0x00}
+
+	SystemFlag := []byte{0x80}
+	QueryFlag := []byte{0x40}
+	ShardingFlag := []byte{0x20}
+
+	//Set get flag
+	// // b2 := []byte{0xe8, 0x03, 0xd0, 0x07}
+	// fmt.Printf("systemflag %x\n", binary.BigEndian.Uint64(SystemFlag))
+	// fmt.Printf("systemflag %x\n", binary.BigEndian.Uint64(QueryFlag))
+	// fmt.Printf("systemflag %x\n", binary.BigEndian.Uint64(ShardingFlag))
+
+	// var testflag []byte = 224
+	var testflag uint64 = 224
+	buf := make([]byte, binary.MaxVarintLen64)
+	// n := binary.PutUvarint(buf, testflag) //convert the int flag into byte array
+	binary.BigEndian.PutUint64(buf, testflag)
+	fmt.Printf("Testflag: %x, %x\n", buf, testflag)
+	// f1 := binary.LittleEndian.Uint64(b2[0:])
+	fmt.Printf("Want %x, Get %x\n", binary.BigEndian.Uint64(buf), testflag)
+	// var inval uint64 = 224
+	// b1 := []byte{0x00} //test result
+	b2 := make([]byte, binary.MaxVarintLen64)
+
+	//Get Flags
+	ANDBytes(b2, SystemFlag, buf)
+	fmt.Printf("After and Want %x, Get %x\n", b2, SystemFlag)
+
+	if !bytes.Equal(b2, SystemFlag) {
+
+		t.Error("System flag not set")
+	}
+
+	//test set flag
+	//reset flag to 0
+	b2 = make([]byte, binary.MaxVarintLen64)
+
+	binary.LittleEndian.PutUint64(buf, testflag)
+	ORBytes(b2, SystemFlag, buf)
+	fmt.Printf("Set  : %x, BYTES %x, UINT64: %x\n", SystemFlag, b2, binary.LittleEndian.Uint64(b2))
+	XORBytes(b2, SystemFlag, b2)
+	fmt.Printf("Clear  : %x, BYTES %x, UINT64: %x\n", SystemFlag, b2, binary.LittleEndian.Uint64(b2))
+	return
+	binary.BigEndian.PutUint64(buf, testflag)
+	ORBytes(b2, SystemFlag, buf)
+	fmt.Printf("Set  : %x, BYTES %x, UINT64: %x\n", SystemFlag, b2, binary.BigEndian.Uint64(b2))
+	XORBytes(b2, SystemFlag, b2)
+	fmt.Printf("Clear  : %x, BYTES %x, UINT64: %x\n", SystemFlag, b2, binary.BigEndian.Uint64(b2))
+	return
+	ORBytes(b2, QueryFlag, b2)
+	fmt.Printf("Set has %x, want %x\n", b2, QueryFlag)
+	ORBytes(b2, ShardingFlag, b2)
+	fmt.Printf("Set has %x, want %x\n", b2, ShardingFlag)
+
+	// &    bitwise AND            integers
+	// |    bitwise OR             integers
+	// ^    bitwise XOR            integers
+	// &^   bit clear (AND NOT)    integers
+
+	f1 := binary.BigEndian.Uint64(b2[0:])
+	// f1 := binary.LittleEndian.Uint64(b2[0:])
+	fmt.Printf("Want %x, Get %x\n", f1, testflag)
+
+	if f1 != testflag {
+		fmt.Printf("Input %x, Output %x flags not equal\n", f1, testflag)
+		t.Error("Input Output flags not equal")
+	}
+}
 
 // Tests that bitwise XOR works for various alignments.
 func TestXOR(t *testing.T) {

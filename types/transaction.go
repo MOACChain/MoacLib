@@ -1,18 +1,18 @@
-// Copyright 2017  The MOAC Foundation
-// This file was modified from the go-ethereum library to be used in MOAC project.
+// Copyright 2014 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 package types
 
@@ -24,23 +24,10 @@ import (
 	"math/big"
 	"sync/atomic"
 
-	"github.com/MOACChain/MoacLib/common"
-	"github.com/MOACChain/MoacLib/common/hexutil"
-
-	"github.com/MOACChain/MoacLib/rlp"
-)
-
-const (
-	// Normal is vnode tx type
-	Normal = iota
-	// DirectCall is subchain tx type, use to call a dapp function and tanster vlaue to dapp address.
-	DirectCall
-	// DirectTransfer subchain tx type, tanster vlaue to the address from data only.
-	DirectTransfer
-	// DappCreate subchain tx type, Create the dapp.
-	DappCreate
-	// MaxTxType used as a judgement
-	MaxTxType
+	"github.com/innowells/moac-lib/common"
+	"github.com/innowells/moac-lib/common/hexutil"
+	"github.com/innowells/moac-lib/crypto"
+	"github.com/innowells/moac-lib/rlp"
 )
 
 //go:generate gencodec -type txdata -field-override txdataMarshaling -out gen_tx_json.go
@@ -53,17 +40,15 @@ var (
 // deriveSigner makes a *best* guess about which signer to use.
 // For MOAC pangu release, just use one
 // may change in the future.
-// REturn a signer with chainID info, shardingFlag, systemFlag
-//
+// REturn a signer with chainID info
 func deriveSigner(V *big.Int) Signer {
-
-	return NewPanguSigner(deriveChainId(V))
+	return NewPanguSigner(DeriveChainId(V))
 }
 
-// Transaction
 type Transaction struct {
 	TxData      txdata
 	DirCallSent bool
+
 	// caches
 	hash    atomic.Value
 	size    atomic.Value //size of the txdata
@@ -72,9 +57,8 @@ type Transaction struct {
 }
 
 /*
- * ShardingFlag and Via are two fields
- * used in MOAC to perform sharding
- * with AppChain.
+ * 2018/03/16 keep ShardingFlag only
+ * 2018/04/23 Added Via field as the SCS subchain address.
  */
 type txdata struct {
 	AccountNonce   uint64          `json:"nonce"    gencodec:"required"`
@@ -84,10 +68,8 @@ type txdata struct {
 	Recipient      *common.Address `json:"to"       rlp:"nil"` // nil means contract creation
 	Amount         *big.Int        `json:"value"    gencodec:"required"`
 	Payload        []byte          `json:"input"    gencodec:"required"`
-
-	//Flags handle the sharding process
-	ShardingFlag uint64          `json:"shardingFlag" gencodec:"required"`
-	Via          *common.Address `json:"via"       rlp:"nil"`
+	ShardingFlag   uint64          `json:"shardingFlag" gencodec:"required"`
+	Via            *common.Address `json:"via"       rlp:"nil"`
 
 	// Signature values
 	V *big.Int `json:"v" gencodec:"required"`
@@ -106,31 +88,31 @@ func (tdata *txdata) SetShardingFlag(inflag uint64) {
 	tdata.ShardingFlag = inflag
 }
 
-// txdataMarshaling contains
+/*
+ * Add the ControlFlag and ScsConsensusAddr
+ * seems not used
+ */
 type txdataMarshaling struct {
 	AccountNonce hexutil.Uint64
-	ShardingFlag hexutil.Uint64
+	ControlFlag  hexutil.Uint64
 	Price        *hexutil.Big
 	GasLimit     *hexutil.Big
 	Amount       *hexutil.Big
 	Payload      hexutil.Bytes
-
-	V *hexutil.Big
-	R *hexutil.Big
-	S *hexutil.Big
+	V            *hexutil.Big
+	R            *hexutil.Big
+	S            *hexutil.Big
 }
 
-// NewTransaction forms a transaction to transfer mc from src account to des
-func NewTransaction(nonce uint64, to common.Address, amount, gasLimit, gasPrice *big.Int, shardingFlag uint64, data []byte) *Transaction {
-	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, shardingFlag, data)
+func NewTransaction(nonce uint64, to common.Address, amount, gasLimit, gasPrice *big.Int, shardingFlag uint64, via *common.Address, data []byte) *Transaction {
+	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, shardingFlag, via, data)
 }
 
-// NewContractCreation forms a transaction to create a new contract (no des account address)
-func NewContractCreation(nonce uint64, amount, gasLimit, gasPrice *big.Int, shardingFlag uint64, data []byte) *Transaction {
-	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, shardingFlag, data)
+func NewContractCreation(nonce uint64, amount, gasLimit, gasPrice *big.Int, shardingFlag uint64, via *common.Address, data []byte) *Transaction {
+	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, shardingFlag, via, data)
 }
 
-func newTransaction(nonce uint64, to *common.Address, amount, gasLimit, gasPrice *big.Int, shardingFlag uint64, data []byte) *Transaction {
+func newTransaction(nonce uint64, to *common.Address, amount, gasLimit, gasPrice *big.Int, shardingFlag uint64, via *common.Address, data []byte) *Transaction {
 	if len(data) > 0 {
 		data = common.CopyBytes(data)
 	}
@@ -147,6 +129,7 @@ func newTransaction(nonce uint64, to *common.Address, amount, gasLimit, gasPrice
 		S:              new(big.Int),
 		SystemContract: 0,
 		ShardingFlag:   shardingFlag,
+		Via:            via,
 	}
 
 	//Set new shardingFlag
@@ -167,9 +150,9 @@ func newTransaction(nonce uint64, to *common.Address, amount, gasLimit, gasPrice
 	return &Transaction{TxData: d}
 }
 
-// ChainID returns which chain id this transaction was signed for (if at all)
+// ChainId returns which chain id this transaction was signed for (if at all)
 func (tx *Transaction) ChainId() *big.Int {
-	return deriveChainId(tx.TxData.V)
+	return DeriveChainId(tx.TxData.V)
 }
 
 // Protected returns whether the transaction is protected from replay protection.
@@ -177,7 +160,6 @@ func (tx *Transaction) Protected() bool {
 	return isProtectedV(tx.TxData.V)
 }
 
-// isProtectedV verified if the input V value is protected or not.
 func isProtectedV(V *big.Int) bool {
 	if V.BitLen() <= 8 {
 		v := V.Uint64()
@@ -187,17 +169,17 @@ func isProtectedV(V *big.Int) bool {
 	return true
 }
 
-// EncodeRLP implements rlp.Encoder
+// DecodeRLP implements rlp.Encoder
 func (tx *Transaction) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, &tx.TxData)
 }
 
 // DecodeRLP implements rlp.Decoder
 // Add the check on the data size
+
 func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 
 	_, size, _ := s.Kind()
-
 	err := s.Decode(&tx.TxData)
 	if err == nil {
 		tx.size.Store(common.StorageSize(rlp.ListSize(size)))
@@ -206,8 +188,35 @@ func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 	return err
 }
 
+func (tx *Transaction) MarshalJSON() ([]byte, error) {
+	hash := tx.Hash()
+	data := tx.TxData
+	data.Hash = &hash
+	return data.MarshalJSON()
+}
+
+// UnmarshalJSON decodes the chan3 RPC transaction format.
+func (tx *Transaction) UnmarshalJSON(input []byte) error {
+	var dec txdata
+	if err := dec.UnmarshalJSON(input); err != nil {
+		return err
+	}
+	var V byte
+	if isProtectedV(dec.V) {
+		chainId := DeriveChainId(dec.V).Uint64()
+		V = byte(dec.V.Uint64() - 35 - 2*chainId)
+	} else {
+		V = byte(dec.V.Uint64() - 27)
+	}
+	if !crypto.ValidateSignatureValues(V, dec.R, dec.S, false) {
+		return ErrInvalidSig
+	}
+	*tx = Transaction{TxData: dec}
+	return nil
+}
+
 func (tx *Transaction) Data() []byte             { return common.CopyBytes(tx.TxData.Payload) }
-func (tx *Transaction) Gas() *big.Int            { return new(big.Int).Set(tx.TxData.GasLimit) }
+func (tx *Transaction) GasLimit() *big.Int       { return new(big.Int).Set(tx.TxData.GasLimit) }
 func (tx *Transaction) GasPrice() *big.Int       { return new(big.Int).Set(tx.TxData.Price) }
 func (tx *Transaction) Value() *big.Int          { return new(big.Int).Set(tx.TxData.Amount) }
 func (tx *Transaction) Nonce() uint64            { return tx.TxData.AccountNonce }
@@ -235,19 +244,7 @@ func (tx *Transaction) To() *common.Address {
 	}
 }
 
-//ToAccount returns destination address of sharding flag transaction
-func (tx *Transaction) ToAccount() common.Address {
-	toAccount := common.Address{}
-	sf := tx.TxData.ShardingFlag
-	data := tx.Data()
-	if (sf == DirectCall || sf == DirectTransfer) && len(data) >= common.AddressLength {
-		toAccount = common.BytesToAddress(data[:common.AddressLength])
-	}
-
-	return toAccount
-}
-
-// Hash hashes the RLP encoding of the tx obj.
+// Hash hashes the RLP encoding of tx.
 // It uniquely identifies the transaction.
 func (tx *Transaction) Hash() common.Hash {
 	if hash := tx.hash.Load(); hash != nil {
@@ -264,7 +261,6 @@ func (tx *Transaction) SigHash(signer Signer) common.Hash {
 	return signer.Hash(tx)
 }
 
-// Size returns the input transaction size
 func (tx *Transaction) Size() common.StorageSize {
 	if size := tx.size.Load(); size != nil {
 		return size.(common.StorageSize)
@@ -276,11 +272,10 @@ func (tx *Transaction) Size() common.StorageSize {
 }
 
 // AsMessage returns the transaction as a core.Message.
-//
 // AsMessage requires a signer to derive the sender.
+// XXX Rename message to something less arbitrary?
 func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 	var (
-		// syncFlag  bool
 		autoFlush bool
 		blk       *big.Int
 	)
@@ -288,19 +283,21 @@ func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 	autoFlush = true
 	blk = big.NewInt(0)
 
+	msgHash := tx.Hash()
 	msg := Message{
-		nonce:      tx.TxData.AccountNonce,
-		price:      new(big.Int).Set(tx.TxData.Price),
-		gasLimit:   new(big.Int).Set(tx.TxData.GasLimit),
-		to:         tx.TxData.Recipient,
-		amount:     tx.TxData.Amount,
-		data:       tx.TxData.Payload,
-		checkNonce: true,
-		system:     tx.TxData.SystemContract,
-		// syncFlag:        syncFlag,
+		nonce:           tx.TxData.AccountNonce,
+		price:           new(big.Int).Set(tx.TxData.Price),
+		gasLimit:        new(big.Int).Set(tx.TxData.GasLimit),
+		to:              tx.TxData.Recipient,
+		amount:          tx.TxData.Amount,
+		data:            tx.TxData.Payload,
+		checkNonce:      true,
+		system:          tx.TxData.SystemContract,
 		autoFlush:       autoFlush,
 		waitBlockNumber: blk,
 		shardFlag:       tx.TxData.ShardingFlag,
+		via:             tx.TxData.Via,
+		msgHash:         &msgHash,
 	}
 
 	var err error
@@ -309,10 +306,9 @@ func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 }
 
 // WithSignature returns a new transaction with the given signature.
-// This signature needs to be formatted as described in the Ethereum yellow paper (v+27).
+// This signature needs to be formatted as described in the yellow paper (v+27).
+// updated to GETH 1.7 version
 func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, error) {
-
-	// derived the signature fields from the input tx and sig
 	r, s, v, err := signer.SignatureValues(tx, sig)
 	if err != nil {
 		return nil, err
@@ -325,19 +321,18 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 // Cost returns amount + gasprice * gaslimit.
 func (tx *Transaction) Cost() *big.Int {
 	total := new(big.Int).Mul(tx.TxData.Price, tx.TxData.GasLimit)
-	// fmt.Printf("Gas cost %v, limit %v\n", tx.TxData.Price, tx.TxData.GasLimit)
-	// fmt.Printf("Gas cost %v, Send value %v\n", total, tx.TxData.Amount)
 
 	total.Add(total, tx.TxData.Amount)
 	return total
 }
 
-// RawSignatureValues returns the signature V,R,S
 func (tx *Transaction) RawSignatureValues() (*big.Int, *big.Int, *big.Int) {
 	return tx.TxData.V, tx.TxData.R, tx.TxData.S
 }
 
-// GetSender return the sender from the sig as string
+/*
+ * Return the sender from the sig as string
+ */
 func (tx *Transaction) GetSender() string {
 	var from string
 	if tx.TxData.V != nil {
@@ -355,20 +350,9 @@ func (tx *Transaction) GetSender() string {
 	return from
 }
 
-// From returns the sender as address
-func (tx *Transaction) From() common.Address {
-	if tx.TxData.V != nil {
-		// make a best guess about the signer and use that to derive
-		// the sender.
-		signer := deriveSigner(tx.TxData.V)
-		if from, err := Sender(signer, tx); err == nil {
-			return from
-		}
-	}
-	return common.Address{}
-}
-
-// String implements the transaction interface
+/*
+ * Return the transaction info as string
+ */
 func (tx *Transaction) String() string {
 	var from, to string
 	if tx.TxData.V != nil {
@@ -389,34 +373,64 @@ func (tx *Transaction) String() string {
 	} else {
 		to = fmt.Sprintf("%x", tx.TxData.Recipient[:])
 	}
+	if tx.TxData.Via == nil {
+		return fmt.Sprintf(`
+		TX(%x)
+		Contract: %v
+		From:     %s
+		To:       %s
+		Nonce:    %v
+		GasPrice: %#x
+		GasLimit  %#x
+		Value:    %#x
+		Data:     0x%x
+		SysCnt:	  %v
+		ShardingFlag: %v
+		Via: %v
+	`,
+			tx.Hash(),
+			tx.TxData.Recipient == nil,
+			from,
+			to,
+			tx.TxData.AccountNonce,
+			tx.TxData.Price,
+			tx.TxData.GasLimit,
+			tx.TxData.Amount,
+			tx.TxData.Payload,
+			tx.TxData.GetSystemFlag(),
+			tx.TxData.GetShardingFlag(),
+			tx.TxData.Via,
+		)
+	} else {
+		return fmt.Sprintf(`
+		TX(%x)
+		Contract: %v
+		From:     %s
+		To:       %s
+		Nonce:    %v
+		GasPrice: %#x
+		GasLimit  %#x
+		Value:    %#x
+		Data:     0x%x
+		SysCnt:	  %v
+		ShardingFlag: %v
+		Via: %v
+	`,
+			tx.Hash(),
+			tx.TxData.Recipient == nil,
+			from,
+			to,
+			tx.TxData.AccountNonce,
+			tx.TxData.Price,
+			tx.TxData.GasLimit,
+			tx.TxData.Amount,
+			tx.TxData.Payload,
+			tx.TxData.GetSystemFlag(),
+			tx.TxData.GetShardingFlag(),
+			tx.TxData.Via.String(),
+		)
+	}
 
-	return fmt.Sprintf(`
-	TX(%x)
-	Contract: %v
-	From:     %s
-	To:       %s
-	Nonce:    %v
-	GasPrice: %#x
-	GasLimit  %#x
-	Value:    %#x
-	Data:     0x%x
-	SysCnt:	  %v
-	ShardingFlag: %v
-	Via:	  %v
-`,
-		tx.Hash(),
-		tx.TxData.Recipient == nil,
-		from,
-		to,
-		tx.TxData.AccountNonce,
-		tx.TxData.Price,
-		tx.TxData.GasLimit,
-		tx.TxData.Amount,
-		tx.TxData.Payload,
-		tx.TxData.GetSystemFlag(),
-		tx.TxData.GetShardingFlag(),
-		tx.TxData.Via,
-	)
 }
 
 // Transaction slice type for basic sorting.
@@ -434,7 +448,7 @@ func (s Transactions) GetRlp(i int) []byte {
 	return enc
 }
 
-// TxDifference returns a new set t which is the difference between a to b
+// Returns a new set t which is the difference between a to b
 func TxDifference(a, b Transactions) (keep Transactions) {
 	keep = make(Transactions, 0, len(a))
 
@@ -552,77 +566,66 @@ type Message struct {
 	checkNonce              bool
 	system                  uint64
 	//	syncFlag                bool
-	autoFlush        bool
-	waitBlockNumber  *big.Int
-	scsConsensusAddr common.Address
-	shardFlag        uint64
+	autoFlush       bool
+	waitBlockNumber *big.Int
+	shardFlag       uint64
+	via             *common.Address
+	msgHash         *common.Hash
 }
 
-// NewMessage creates a new message
-func NewMessage(from common.Address, to *common.Address, nonce uint64, amount, gasLimit, price *big.Int,
-	data []byte, checkNonce bool, syncFlag bool, autoFlush bool, waitBlockNumber *big.Int,
-	scsConsensusAddr common.Address, shardingFlag uint64) Message {
+func NewMessage(
+	from common.Address,
+	to *common.Address,
+	nonce uint64, amount, gasLimit, price *big.Int,
+	data []byte,
+	checkNonce bool,
+	syncFlag bool,
+	autoFlush bool,
+	waitBlockNumber *big.Int,
+	shardingFlag uint64,
+	via *common.Address,
+	msgHash *common.Hash,
+) Message {
 	return Message{
-		from:             from,
-		to:               to,
-		nonce:            nonce,
-		amount:           amount,
-		price:            price,
-		gasLimit:         gasLimit,
-		data:             data,
-		checkNonce:       checkNonce,
-		system:           0,
-		autoFlush:        autoFlush,
-		waitBlockNumber:  waitBlockNumber,
-		scsConsensusAddr: scsConsensusAddr,
-		shardFlag:        shardingFlag,
+		from:       from,
+		to:         to,
+		nonce:      nonce,
+		amount:     amount,
+		price:      price,
+		gasLimit:   gasLimit,
+		data:       data,
+		checkNonce: checkNonce,
+		system:     0,
+		// syncFlag:         syncFlag,
+		autoFlush:       autoFlush,
+		waitBlockNumber: waitBlockNumber,
+		shardFlag:       shardingFlag,
+		via:             via,
+		msgHash:         msgHash,
 	}
 }
-
-func (m Message) From() common.Address { return m.from }
-func (m Message) To() *common.Address  { return m.to }
-func (m Message) GasPrice() *big.Int   { return m.price }
-func (m Message) Value() *big.Int      { return m.amount }
-func (m Message) Gas() *big.Int        { return m.gasLimit }
-func (m Message) Nonce() uint64        { return m.nonce }
-func (m Message) Data() []byte         { return m.data }
-func (m Message) CheckNonce() bool     { return m.checkNonce }
-func (m Message) GetSystem() uint64    { return m.system }
 
 func (m Message) AutoFlush() bool           { return m.autoFlush }
 func (m Message) WaitBlockNumber() *big.Int { return m.waitBlockNumber }
+func (m Message) Via() *common.Address      { return m.via }
+func (m Message) ShardFlag() uint64         { return m.shardFlag }
+func (m Message) From() common.Address      { return m.from }
+func (m Message) To() *common.Address       { return m.to }
+func (m Message) GasPrice() *big.Int        { return m.price }
+func (m Message) Value() *big.Int           { return m.amount }
+func (m Message) GasLimit() *big.Int        { return m.gasLimit }
+func (m Message) Nonce() uint64             { return m.nonce }
+func (m Message) Data() []byte              { return m.data }
+func (m Message) CheckNonce() bool          { return m.checkNonce }
+func (m Message) GetSystem() uint64         { return m.system }
+func (m Message) GetMsgHash() *common.Hash  { return m.msgHash }
 
-func (m Message) ScsConsensusAddr() common.Address { return m.scsConsensusAddr }
-func (m Message) ShardFlag() uint64                { return m.shardFlag }
 func (m *Message) SetShardingFlag(sharding uint64) {
 	if sharding > 0 {
-		// m.syncFlag = false
 		m.autoFlush = false
 		m.waitBlockNumber = big.NewInt(0)
 	} else {
-		// m.syncFlag = true
 		m.autoFlush = false
 		m.waitBlockNumber = big.NewInt(0)
 	}
-}
-
-// ToAccount return the dest address of the input message as common address.
-func (m Message) ToAccount() common.Address {
-	toAccount := common.Address{}
-	if (m.shardFlag == DirectCall || m.shardFlag == DirectTransfer) &&
-		len(m.data) >= common.AddressLength {
-		toAccount = common.BytesToAddress(m.data[:common.AddressLength])
-	}
-
-	return toAccount
-}
-
-// GetProperData
-func (m Message) GetProperData() []byte {
-	var data []byte
-	if (m.shardFlag == DirectCall) && len(m.data) > common.AddressLength {
-		data = m.data[common.AddressLength:]
-	}
-
-	return data
 }

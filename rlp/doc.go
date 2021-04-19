@@ -1,29 +1,27 @@
-// Copyright 2017  The MOAC Foundation
-// This file is part of the go-ethereum library.
+// Copyright 2014 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 /*
 Package rlp implements the RLP serialization format.
 
-MOAC used the same RLP rules as defined in ethereum project:
-
 The purpose of RLP (Recursive Linear Prefix) is to encode arbitrarily
 nested arrays of binary data, and RLP is the main encoding method used
-to serialize objects in MOAC. The only purpose of RLP is to encode
+to serialize objects in MoacNode. The only purpose of RLP is to encode
 structure; encoding specific atomic data types (eg. strings, ints,
-floats) is left up to higher-order protocols; in MOAC integers
+floats) is left up to higher-order protocols; in MoacNode integers
 must be represented in big endian binary form with no leading zeroes
 (thus making the integer value zero equivalent to the empty byte
 array).

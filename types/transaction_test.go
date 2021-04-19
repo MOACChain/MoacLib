@@ -1,18 +1,18 @@
-// Copyright 2017  The MOAC-lib Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 package types
 
@@ -25,19 +25,23 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MOACChain/MoacLib/common"
-	"github.com/MOACChain/MoacLib/crypto"
-	"github.com/MOACChain/MoacLib/rlp"
+	"github.com/innowells/moac-lib/common"
+	"github.com/innowells/moac-lib/crypto"
+	"github.com/innowells/moac-lib/rlp"
 )
 
-// The values in those tests are for the Transaction Tests
+// The values in those tests are from the Transaction Tests
+//
+// at github.com/innowells/moac-vnode/tests.
+// emptyAddress is declared in transaxtion_signing_test.go
+// it is used to init the ScsConsensusAddress.
 
 var (
 	emptyTx = NewTransaction(
 		0,
 		common.HexToAddress("7312F4B8A4457a36827f185325Fd6B66a3f8BB8B"),
 		big.NewInt(0), big.NewInt(0), big.NewInt(0), 0,
-		nil,
+		nil, nil,
 	)
 
 	rightvrsTx, _ = NewTransaction(
@@ -47,7 +51,7 @@ var (
 		big.NewInt(40000000000),
 		big.NewInt(2100000),
 		0,
-		nil,
+		nil, common.FromHex("5544"),
 	).WithSignature(
 		PanguSigner{},
 		common.Hex2Bytes("98ff921201554726367d2be8c804a7ff89ccf285ebc57dff8ae4c44b9c19ac4a8887321be575c8095f789dd4c743dfe42c1820f9231f98a962b210e3ac2452a301"),
@@ -57,30 +61,28 @@ var (
 		42,
 		common.HexToAddress("0000000000000000000000000000000000000065"),
 		big.NewInt(0), big.NewInt(0), big.NewInt(20000000000), 0,
-		nil,
+		nil, nil,
 	)
 )
 
 func TestTransactionSigHash(t *testing.T) {
 
 	outHash := emptyTx.SigHash(PanguSigner{})
-	// fmt.Printf("Signed:%v\n", len(outHash))
-	// fmt.Printf("Signed:%v\n", outHash)
-	// fmt.Printf("Signed:%v\n", len(emptyTx.Hash()))
-	// fmt.Printf("Signed:%v\n", common.HexToHash("52e8d2bc1372f0c6672f54b1173b302d1204ff5687f797c5f2bf5cca504d9e9a"))
-
-	if outHash != common.HexToHash("33f1c77c68175ffede28ddd0361239251164093901ea11a7baa40d64d820005f") {
+	fmt.Printf("Signed:%v\n", len(outHash))
+	fmt.Printf("Signed:%v\n", outHash)
+	fmt.Printf("Signed:%v\n", len(emptyTx.Hash()))
+	fmt.Printf("Signed:%v\n", common.HexToHash("52e8d2bc1372f0c6672f54b1173b302d1204ff5687f797c5f2bf5cca504d9e9a"))
+	if outHash != common.HexToHash("52e8d2bc1372f0c6672f54b1173b302d1204ff5687f797c5f2bf5cca504d9e9a") {
 		t.Errorf("empty transaction hash mismatch, got %x", emptyTx.Hash())
 	}
-
-	if rightvrsTx.SigHash(PanguSigner{}) != common.HexToHash("394ce9ac0a875696de603110f976b6c4f9c09a74783b2d35b51d5d398e7af6c4") {
-		t.Errorf("RightVRS transaction hash mismatch, got %x", rightvrsTx.SigHash(PanguSigner{}))
+	if rightvrsTx.SigHash(PanguSigner{}) != common.HexToHash("57a8edb2406353d1d2ca0123de5729015cf433a699bb78e9ed496756f0658ba5") {
+		t.Errorf("RightVRS transaction hash mismatch, got %x", rightvrsTx.Hash())
 	}
 	outHash = panguTx.SigHash(PanguSigner{})
 	//093d41e8ce16bcaea82d67ba7b90f899b03085e9d7c44a6781f70bdd30265c0c, with common.Address
 	//d2e3b81804a788fb52f7117a359a554bd13b1c58d14ab5f1542f3e920808d28a, interface
-	if outHash != common.HexToHash("093d41e8ce16bcaea82d67ba7b90f899b03085e9d7c44a6781f70bdd30265c0c") {
-		t.Errorf("Pangu transaction hash mismatch, got %x", panguTx.SigHash(PanguSigner{}))
+	if outHash != common.HexToHash("200e97effaefdf55a2e6e1fe8faae693b28de9cd7dc6ea9603cd53e68f408449") {
+		t.Errorf("Pangu transaction hash mismatch, got %x", panguTx.Hash())
 	}
 
 }
@@ -90,24 +92,25 @@ func TestTransactionEncode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encode error: %v", err)
 	}
-	should := common.FromHex("f86d168083200b208509502f9000947312f4b8a4457a36827f185325fd6b66a3f8bb8b855d21dba0008080801ca098ff921201554726367d2be8c804a7ff89ccf285ebc57dff8ae4c44b9c19ac4aa08887321be575c8095f789dd4c743dfe42c1820f9231f98a962b210e3ac2452a3")
+	should := common.FromHex("f86103018207d094b94f5374fce5edbc8e2a8697c15331677e6ebf0b0a8255441ca098ff921201554726367d2be8c804a7ff89ccf285ebc57dff8ae4c44b9c19ac4aa08887321be575c8095f789dd4c743dfe42c1820f9231f98a962b210e3ac2452a3")
 	if !bytes.Equal(txb, should) {
 		t.Errorf("encoded RLP mismatch, got %x", txb)
 	}
 }
 
-// GETH TX decoder
 func decodeTx(data []byte) (*Transaction, error) {
 	var tx Transaction
 	t, err := &tx, rlp.Decode(bytes.NewReader(data), &tx)
 
 	fmt.Printf("decoded tx: %s\n", t.String())
-
+	// fmt.Printf("t.data:%v\n\n", t.data)
+	// fmt.Printf("====================\namount: %v\n", t.data.Amount)
+	// fmt.Printf("T gasLimit: %v\n", t.data.GasLimit)
 	return t, err
 }
 
 func defaultTestKey() (*ecdsa.PrivateKey, common.Address) {
-	key, _ := crypto.HexToECDSA("c75a5f85ef779dcf95c651612efb3c3b9a6dfafb1bb5375905454d9fc8be8a6b")
+	key, _ := crypto.HexToECDSA("45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8")
 	addr := crypto.PubkeyToAddress(key.PublicKey)
 	return key, addr
 }
@@ -127,10 +130,10 @@ func defaultTestKey() (*ecdsa.PrivateKey, common.Address) {
 func TestDecodeMoacTx(t *testing.T) {
 	addFrom := "0x7312F4B8A4457a36827f185325Fd6B66a3f8BB8B"
 	addTo := "0xD814F2ac2c4cA49b33066582E4e97EBae02F2aB9"
-	addNonce := uint64(60)
-
-	// notice the cmd string should not have '0x' as prefix
-	cmd := "f8713c80850ba43b7400834c4b4094d814f2ac2c4ca49b33066582e4e97ebae02f2ab9888ac7230489e8000000808081eca043d6fa3c6f3b75356ad034d118a8e17d660c95a9490445080a2ae6990b5c24d0a02ab20ac0039a2dceec7117ecb689525dae3d9fb5a7198f3e686369901ecabf5a"
+	addNonce := uint64(1)
+	// cmd := "f9015f01808417d784008301c1a08000b90109608060405234801561001057600080fd5b5060ea8061001f6000396000f30060806040526004361060525763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166306661abd81146057578063771602f714607b578063a87d942c146093575b600080fd5b348015606257600080fd5b50606960a5565b60408051918252519081900360200190f35b348015608657600080fd5b50606960043560243560ab565b348015609e57600080fd5b50606960b8565b60005481565b6000805460010190550190565b600054905600a165627a7a723058208e75b939bd9f99fc6e7aac50406daaa52d37aa859049ca7738760bd9fa9384440029808081eaa006f445111f3adc222daed8851c03328393a97ce5d9905886b862bf5b9dcfb0dfa040c99976eec1516d2d5bef631af44b6dd61865eab6126e3941fe56c2ab6d8c6d"
+	cmd := "f9016801808509502f90008340164080880de0b6b3a7640000b90109608060405234801561001057600080fd5b5060ea8061001f6000396000f30060806040526004361060525763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166306661abd81146057578063771602f714607b578063a87d942c146093575b600080fd5b348015606257600080fd5b50606960a5565b60408051918252519081900360200190f35b348015608657600080fd5b50606960043560243560ab565b348015609e57600080fd5b50606960b8565b60005481565b6000805460010190550190565b600054905600a165627a7a723058208e75b939bd9f99fc6e7aac50406daaa52d37aa859049ca7738760bd9fa9384440029808081eaa0bcd432024a758117369e8537c17fe3c72cb295a920465763c04ae599ea6b30b6a078c8c2fec0aea695d948d5bcc2b2c0987656fecc8de53a9e5f884cb3d06bc5c6"
+	// cmd := "f85401808417d784008301c1a0800080808081eaa03585643b2134efee2d0568169d38991492239f98ebbba9439b1d118a0333c7e3a0470864203e65086d50e80b76116e0f4dc43a88e4a430b6cbe667b29ce13f9c83"
 	tx, err := decodeTx(common.Hex2Bytes(cmd))
 	if err != nil {
 		fmt.Printf("rec add: %v\n", tx.TxData.Recipient)
@@ -162,49 +165,66 @@ func TestDecodeMoacTx(t *testing.T) {
 }
 
 /*
- * Test the system and sharding flags set
- */
+ * Test the control flags set
+* removed
+*/
 
 func TestControlFlags(t *testing.T) {
 	var f1 uint64 = 1
 	//Set system flag and clear it
 	emptyTx.SetSystemFlag(f1)
+	fmt.Printf("Control Flag %x\n", emptyTx.TxData.ShardingFlag)
 
 	if emptyTx.GetSystemFlag() != f1 {
 		fmt.Printf("Set system flag Error: %v\n", emptyTx.TxData.ShardingFlag)
 	}
 	emptyTx.SetShardingFlag(f1)
+	fmt.Printf("Control Flag %x\n", emptyTx.TxData.ShardingFlag)
 
 	if emptyTx.GetShardingFlag() != f1 {
 		fmt.Printf("Set sharding flag 0 Error: %v\n", emptyTx.TxData.ShardingFlag)
 	}
 	f1 = 0
 	emptyTx.SetSystemFlag(f1)
+	fmt.Printf("Control Flag %x\n", emptyTx.TxData.ShardingFlag)
 
 	if emptyTx.GetSystemFlag() != f1 {
 		fmt.Printf("Set system flag 0 Error: %v\n", emptyTx.TxData.ShardingFlag)
 	}
 
 	emptyTx.SetShardingFlag(f1)
+	fmt.Printf("Control Flag %x\n", emptyTx.TxData.ShardingFlag)
 
 	if emptyTx.GetShardingFlag() != f1 {
 		fmt.Printf("Set sharding flag 0 Error: %v\n", emptyTx.TxData.ShardingFlag)
 	}
+	/*
+		//Set query flag and clear it
+		emptyTx.SetQueryFlag(1)
+		fmt.Printf("Control Flag after set Query flag %x\n", emptyTx.TxData.ControlFlag)
 
+		if emptyTx.GetQueryFlag() != f1 {
+			fmt.Printf("Set Query flag Error: %v\n", emptyTx.TxData.ControlFlag)
+		}
+		f1 = 0
+		emptyTx.SetQueryFlag(f1)
+		fmt.Printf("Control Flag %x\n", emptyTx.TxData.ControlFlag)
+
+		if emptyTx.GetQueryFlag() != f1 {
+			fmt.Printf("Set Query flag 0 Error: %v\n", emptyTx.TxData.ControlFlag)
+		}
+	*/
 }
 
-// MOAC didn't support HomeStead signer or Frontier Signer due to security reasons
 func TestRecipientEmpty(t *testing.T) {
 	_, addr := defaultTestKey()
-	tx, err := decodeTx(common.Hex2Bytes("f901603d808561c9f368008301c1a08080b90109608060405234801561001057600080fd5b5060ea8061001f6000396000f30060806040526004361060525763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166306661abd81146057578063771602f714607b578063a87d942c146093575b600080fd5b348015606257600080fd5b50606960a5565b60408051918252519081900360200190f35b348015608657600080fd5b50606960043560243560ab565b348015609e57600080fd5b50606960b8565b60005481565b6000805460010190550190565b600054905600a165627a7a7230582021c8fccfce143160093bf7a7678648bb60fd456b95752067a6c81042f70eab970029808081eca0efb1986ea2a905dbbee47ebb3603e3099b989c603a84cd7346402696abcada45a00b675c05feab7815f8d83b78c80055c26cb75bfc6fe586b2299e0ff7c3009590"))
+	tx, err := decodeTx(common.Hex2Bytes("f8498080808080011ca09b16de9d5bdee2cf56c28d16275a4da68cd30273e2525f3959f5d62557489921a0372ebd8fb3345f7db7b5a86d42e24d36e983e259b0664ceb8c227ec9af572f3d"))
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
 	}
 
-	// For PanguSigner, need to be initialized with chainId
-	psigner := NewPanguSigner(big.NewInt(100))
-	from, err := Sender(psigner, tx)
+	from, err := Sender(PanguSigner{}, tx)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -216,15 +236,14 @@ func TestRecipientEmpty(t *testing.T) {
 
 func TestRecipientNormal(t *testing.T) {
 	_, addr := defaultTestKey()
-	tx, err := decodeTx(common.Hex2Bytes("f8713d80850ba43b7400834c4b4094d814f2ac2c4ca49b33066582e4e97ebae02f2ab9888ac7230489e8000000808081eca0dbb8aa849c8ac42f174b38253ec498ca1c28cb524f6e1527f145045d253567e4a07a2a6f9878518ba8f4f9ffc79845b6d74f88f6c0601aebea68b18b239f8d84c3"))
+	fmt.Printf("default key:%v\n", addr.GetBase58Str())
+	tx, err := decodeTx(common.Hex2Bytes("f86f808084ee6b28008303345094d814f2ac2c4ca49b33066582e4e97ebae02f2ab98901000000000000000000801ca02955c1beabdf8df0bdf8875d971353aa2ab8b9aca2b2f4a7167164b6a19cbf35a07eef6b59f78c80a8ec5883bb33cac30b131e28bd41121443994013814b8cb194"))
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
 	}
 
-	// For PanguSigner, need to be initialized with chainId
-	psigner := NewPanguSigner(big.NewInt(100))
-	from, err := Sender(psigner, tx)
+	from, err := Sender(PanguSigner{}, tx)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -251,7 +270,7 @@ func TestTransactionPriceNonceSort(t *testing.T) {
 	for start, key := range keys {
 		addr := crypto.PubkeyToAddress(key.PublicKey)
 		for i := 0; i < 25; i++ {
-			tx, _ := SignTx(NewTransaction(uint64(start+i), common.Address{}, big.NewInt(100), big.NewInt(100), big.NewInt(int64(start+i)), 0, nil), signer, key)
+			tx, _ := SignTx(NewTransaction(uint64(start+i), common.Address{}, big.NewInt(100), big.NewInt(100), big.NewInt(int64(start+i)), 0, nil, nil), signer, key)
 			groups[addr] = append(groups[addr], tx)
 		}
 	}
@@ -316,9 +335,9 @@ func TestTransactionJSON(t *testing.T) {
 		var tx *Transaction
 		switch i % 2 {
 		case 0:
-			tx = NewTransaction(i, common.Address{1}, common.Big0, common.Big1, common.Big2, 0, []byte("abcdef"))
+			tx = NewTransaction(i, common.Address{1}, common.Big0, common.Big1, common.Big2, 0, nil, []byte("abcdef"))
 		case 1:
-			tx = NewContractCreation(i, common.Big0, common.Big1, common.Big2, 0, []byte("abcdef"))
+			tx = NewContractCreation(i, common.Big0, common.Big1, common.Big2, 0, nil, []byte("abcdef"))
 		}
 
 		tx, err := SignTx(tx, signer, key)

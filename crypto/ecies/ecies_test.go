@@ -40,7 +40,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MOACChain/MoacLib/crypto"
+	"github.com/innowells/moac-lib/crypto"
 )
 
 var dumpEnc bool

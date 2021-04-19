@@ -1,18 +1,18 @@
-// Copyright 2017  The MOAC Foundation
-// This file is part of the go-ethereum library.
+// Copyright 2015 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -21,12 +21,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MOACChain/MoacLib/common"
-	"github.com/MOACChain/MoacLib/crypto"
-	"github.com/MOACChain/MoacLib/crypto/sha3"
-	"github.com/MOACChain/MoacLib/log"
-	"github.com/MOACChain/MoacLib/mcdb"
-	"github.com/MOACChain/MoacLib/rlp"
+	"github.com/innowells/moac-lib/common"
+	"github.com/innowells/moac-lib/crypto/sha3"
+	"github.com/innowells/moac-lib/log"
+	"github.com/innowells/moac-lib/rlp"
 )
 
 // Prove constructs a merkle proof for key. The result contains all
@@ -84,81 +82,6 @@ func (t *Trie) Prove(key []byte) []rlp.RawValue {
 		}
 	}
 	return proof
-}
-
-// Prove constructs a merkle proof for key. The result contains all encoded nodes
-// on the path to the value at key. The value itself is also included in the last
-// node and can be retrieved by verifying the proof.
-//
-// If the trie does not contain a value for key, the returned proof contains all
-// nodes of the longest existing prefix of the key (at least the root node), ending
-// with the node that proves the absence of the key.
-func (t *Trie) ProveWithMcdb(key []byte, fromLevel uint, proofDb mcdb.Putter) error {
-	// Collect all nodes on the path to key.
-	key = keybytesToHex(key)
-	nodes := []node{}
-	tn := t.root
-	for len(key) > 0 && tn != nil {
-		switch n := tn.(type) {
-		case *shortNode:
-			if len(key) < len(n.Key) || !bytes.Equal(n.Key, key[:len(n.Key)]) {
-				// The trie doesn't contain the key.
-				tn = nil
-			} else {
-				tn = n.Val
-				key = key[len(n.Key):]
-			}
-			nodes = append(nodes, n)
-		case *fullNode:
-			tn = n.Children[key[0]]
-			key = key[1:]
-			nodes = append(nodes, n)
-		case hashNode:
-			var err error
-			tn, err = t.resolveHash(n, nil)
-			if err != nil {
-				log.Error(fmt.Sprintf("Unhandled trie error: %v", err))
-				return err
-			}
-		default:
-			panic(fmt.Sprintf("%T: invalid node: %v", tn, tn))
-		}
-	}
-	// hasher := newHasher(0, 0, nil)// 1.8 version
-	hasher := newHasher(0, 0) // to be compatible with GETH 1.7 version
-	defer returnHasherToPool(hasher)
-
-	for i, n := range nodes {
-		// Don't bother checking for errors here since hasher panics
-		// if encoding doesn't work and we're not writing to any database.
-		n, _, _ = hasher.hashChildren(n, nil)
-		hn, _ := hasher.store(n, nil, false)
-		if hash, ok := hn.(hashNode); ok || i == 0 {
-			// If the node's database encoding is a hash (or is the
-			// root node), it becomes a proof element.
-			if fromLevel > 0 {
-				fromLevel--
-			} else {
-				enc, _ := rlp.EncodeToBytes(n)
-				if !ok {
-					hash = crypto.Keccak256(enc)
-				}
-				proofDb.Put(hash, enc)
-			}
-		}
-	}
-	return nil
-}
-
-// Prove constructs a merkle proof for key. The result contains all encoded nodes
-// on the path to the value at key. The value itself is also included in the last
-// node and can be retrieved by verifying the proof.
-//
-// If the trie does not contain a value for key, the returned proof contains all
-// nodes of the longest existing prefix of the key (at least the root node), ending
-// with the node that proves the absence of the key.
-func (t *SecureTrie) Prove(key []byte, fromLevel uint, proofDb mcdb.Putter) error {
-	return t.trie.ProveWithMcdb(key, fromLevel, proofDb)
 }
 
 // VerifyProof checks merkle proofs. The given proof must contain the

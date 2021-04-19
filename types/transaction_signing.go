@@ -1,18 +1,18 @@
-// Copyright 2017  The MOAC Foundation
-// This file is part of the go-ethereum library.
+// Copyright 2016 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 package types
 
@@ -22,9 +22,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/MOACChain/MoacLib/common"
-	"github.com/MOACChain/MoacLib/crypto"
-	"github.com/MOACChain/MoacLib/log"
+	"github.com/innowells/moac-lib/common"
+	"github.com/innowells/moac-lib/crypto"
+	"github.com/innowells/moac-lib/log"
+	//"github.com/innowells/moac-lib/params"
 )
 
 //Added ErrUnproctedTX to exclude
@@ -51,14 +52,8 @@ type sigCache struct {
 // default is to omitempty Accounts
 // EIP158
 //
-type ChainConfig struct {
-	ChainId *big.Int `json:"chainId"` // Chain id identifies the current chain and is used for replay protection
-
-	PanguBlock         *big.Int `json:"panguBlock,omitempty"`         // Pangu switch block (nil = no fork, 0 = already pangu)
-	RemoveEmptyAccount bool     `json:"removeEmptyAccount,omitempty"` //Replace EIP158 check and should be set to true
-
-	// Various consensus engines
-	Ethash *EthashConfig `json:"ethash,omitempty"`
+type ChainConfig interface {
+	GetChainId() *big.Int
 }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.
@@ -73,24 +68,18 @@ func (c *EthashConfig) String() string {
 // PANGU 0.8
 // May use other signer if the protocol changes
 // Following interfaces are following GETH 1.8
-func MakeSigner(config *ChainConfig, blockNumber *big.Int) Signer {
 
-	// use PanguSigner which include the chainId
-	return NewPanguSigner(config.ChainId)
+func MakeSigner(config ChainConfig, blockNumber *big.Int) Signer {
+	return NewPanguSigner(config.GetChainId())
 }
 
 // SignTx signs the transaction using the given signer and private key
 func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, error) {
-	// log.Info("[core/types/transaction_signing.go->SignTx]")
 	h := s.Hash(tx)
 	sig, err := crypto.Sign(h[:], prv)
 	if err != nil {
 		return nil, err
 	}
-	// Note this part changes from
-	// s.WithSignature(tx, sig)
-	// to
-	// tx.WithSignature(s, sig)
 	return tx.WithSignature(s, sig)
 }
 
@@ -113,7 +102,6 @@ func Sender(signer Signer, tx *Transaction) (common.Address, error) {
 
 	if sc := tx.from.Load(); sc != nil {
 		sigCache := sc.(sigCache)
-
 		// If the signer used to derive from in a previous
 		// call is not the same as used current, invalidate
 		// the cache.
@@ -131,6 +119,18 @@ func Sender(signer Signer, tx *Transaction) (common.Address, error) {
 	return addr, nil
 }
 
+//Changed the interface to GETH 1.8
+// type Signer interface {
+// 	// Hash returns the rlp encoded hash for signatures
+// 	Hash(tx *Transaction) common.Hash
+// 	// PubilcKey returns the public key derived from the signature
+// 	PublicKey(tx *Transaction) ([]byte, error)
+// 	// WithSignature returns a copy of the transaction with the given signature.
+// 	// The signature must be encoded in [R || S || V] format where V is 0 or 1.
+// 	WithSignature(tx *Transaction, sig []byte) (*Transaction, error)
+// 	// Checks for equality on the signers
+// 	Equal(Signer) bool
+// }
 // Signer encapsulates transaction signature handling. Note that this interface is not a
 // stable API and may change at any time to accommodate new protocol rules.
 type Signer interface {
@@ -145,13 +145,15 @@ type Signer interface {
 	Equal(Signer) bool
 }
 
-// PanguSigner implements TransactionInterface using the
+// EIP155Transaction implements TransactionInterface using the
 // EIP155 rules
+//type EIP155Signer struct {
 type PanguSigner struct {
 	chainId, chainIdMul *big.Int
 }
 
-// NewPanguSigner follows the EIP155 rules.
+// func NewEIP155Signer(chainId *big.Int) EIP155Signer {
+//Following the EIP155 rules
 func NewPanguSigner(inchainID *big.Int) PanguSigner {
 	if inchainID == nil {
 		inchainID = new(big.Int)
@@ -162,7 +164,6 @@ func NewPanguSigner(inchainID *big.Int) PanguSigner {
 	}
 }
 
-// Equal verifies if two signers are equal.
 func (ps PanguSigner) Equal(s2 Signer) bool {
 	pangu, ok := s2.(PanguSigner)
 	return ok && pangu.chainId.Cmp(ps.chainId) == 0
@@ -174,7 +175,7 @@ func (ps PanguSigner) Equal(s2 Signer) bool {
  *
  */
 
-// SignatureValues returns a new transaction with the given signature. This signature
+// WithSignature returns a new transaction with the given signature. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.
 // Replaced by the SignatureValues
 func (ps PanguSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
@@ -186,8 +187,9 @@ func (ps PanguSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big
 	S = new(big.Int).SetBytes(sig[32:64])
 	V = new(big.Int).SetBytes([]byte{sig[64] + 27})
 
+	log.Debugf("[core/types/transaction_signing.go->PANGU signer] chainID: %v", ps.chainId)
 	if ps.chainId != nil {
-		log.Debugf("[core/types/transaction_signing.go->PANGU signer] chainID: %v\n", ps.chainId)
+		log.Debugf("sign %v\n", ps.chainId.Sign())
 		if ps.chainId.Sign() != 0 {
 			V = big.NewInt(int64(sig[64] + 35))
 			V.Add(V, ps.chainIdMul)
@@ -199,8 +201,14 @@ func (ps PanguSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big
 
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
+// Need to be updated with the transaction data structure.
+// 2018/03/15 Updated the transaction with SystemContract
+// and ShardingFlag
+// 2018/04/23
+// Add Via field
+
 func (ps PanguSigner) Hash(tx *Transaction) common.Hash {
-	// log.Info("[core/types/transaction_signing.go->EIP155Signer.Hash]")
+	log.Debugf("[core/types/transaction_signing.go->PanguSigner.Hash]:%v", ps.chainId)
 	return common.RlpHash([]interface{}{
 		tx.TxData.AccountNonce,
 		tx.TxData.SystemContract,
@@ -215,16 +223,18 @@ func (ps PanguSigner) Hash(tx *Transaction) common.Hash {
 	})
 }
 
-// Sender derived the sender info from the TX input
+/*
+ * Derived the sender info from the TX input
+ * panguSigner 0.8.2
+ *
+ */
 func (ps PanguSigner) Sender(tx *Transaction) (common.Address, error) {
 	if !tx.Protected() {
 		//Report error if the input signature is not protected
 		return common.Address{}, ErrUnproctedTX
 	}
-
-	log.Debugf("[core/types/transaction_signing.go->PanguSigner.Sender:%v\n", tx.ChainId())
+	log.Debugf("[core/types/transaction_signing.go->PanguSigner.Sender:%v, ps %v", tx.ChainId(), ps.chainId)
 	if tx.ChainId().Cmp(ps.chainId) != 0 {
-		log.Debugf("[core/types/transaction_signing.go->PanguSigner.Sender:unmatched ps.chainId: %v\n", ps.chainId)
 		return common.Address{}, ErrInvalidChainId
 	}
 
@@ -232,13 +242,14 @@ func (ps PanguSigner) Sender(tx *Transaction) (common.Address, error) {
 	V := new(big.Int).Sub(tx.TxData.V, ps.chainIdMul)
 	var big8 = big.NewInt(8)
 	V.Sub(V, big8)
-
 	//Need to make sure the input is 27,
 	//Get the Sender info
 	return recoverPlain(ps.Hash(tx), tx.TxData.R, tx.TxData.S, V, true)
 }
 
-// recoverPlain returns the Address of the transaction Sender
+// New function used in GETH 1.7 and later
+// Return the Address of the transaction Sender
+//
 func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, pangu bool) (common.Address, error) {
 	if Vb.BitLen() > 8 {
 		return common.Address{}, ErrInvalidSig
@@ -273,21 +284,27 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, pangu bool) (common.Ad
 	if len(pub) == 0 || pub[0] != 4 {
 		return common.Address{}, errors.New("invalid public key")
 	}
-	// fmt.Printf("Pubkey:%v\n", pub)
+	//Return the address
 	var addr common.Address
 	copy(addr[:], crypto.Keccak256(pub[1:])[12:])
 	return addr, nil
 }
 
-// deriveChainId derives the chain id from the given v parameter
-func deriveChainId(v *big.Int) *big.Int {
+// DeriveChainId derives the chain id from the given v parameter
+func DeriveChainId(v *big.Int) *big.Int {
 	if v.BitLen() <= 64 {
+		//If v value is a UINT64 number
 		v := v.Uint64()
+		// No chainID is included in the V
 		if v == 27 || v == 28 {
+			//This should not happen in MOAC network
+
 			return new(big.Int)
 		}
+		//EIP155 compute
 		return new(big.Int).SetUint64((v - 35) / 2)
 	}
+	//If v is really large
 	v = new(big.Int).Sub(v, big.NewInt(35))
 	return v.Div(v, big.NewInt(2))
 }

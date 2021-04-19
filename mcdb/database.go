@@ -1,18 +1,18 @@
-// Copyright 2017  The MOAC Foundation
-// This file is part of the go-ethereum library.
+// Copyright 2014 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 package mcdb
 
@@ -22,14 +22,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MOACChain/MoacLib/log"
-	"github.com/MOACChain/MoacLib/metrics"
+	"github.com/innowells/moac-lib/log"
+	"github.com/innowells/moac-lib/metrics"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
-	// gometrics "github.com/rcrowley/go-metrics"
+
+	gometrics "github.com/rcrowley/go-metrics"
 )
 
 var OpenFileLimit = 64
@@ -38,25 +39,15 @@ type LDBDatabase struct {
 	fn string      // filename for reporting
 	db *leveldb.DB // LevelDB instance
 
-	// getTimer       gometrics.Timer // Timer for measuring the database get request counts and latencies
-	// putTimer       gometrics.Timer // Timer for measuring the database put request counts and latencies
-	// delTimer       gometrics.Timer // Timer for measuring the database delete request counts and latencies
-	// missMeter      gometrics.Meter // Meter for measuring the missed database get requests
-	// readMeter      gometrics.Meter // Meter for measuring the database get request data usage
-	// writeMeter     gometrics.Meter // Meter for measuring the database put request data usage
-	// compTimeMeter  gometrics.Meter // Meter for measuring the total time spent in database compaction
-	// compReadMeter  gometrics.Meter // Meter for measuring the data read during compaction
-	// compWriteMeter gometrics.Meter // Meter for measuring the data written during compaction
-
-	getTimer       metrics.Timer // Timer for measuring the database get request counts and latencies
-	putTimer       metrics.Timer // Timer for measuring the database put request counts and latencies
-	delTimer       metrics.Timer // Timer for measuring the database delete request counts and latencies
-	missMeter      metrics.Meter // Meter for measuring the missed database get requests
-	readMeter      metrics.Meter // Meter for measuring the database get request data usage
-	writeMeter     metrics.Meter // Meter for measuring the database put request data usage
-	compTimeMeter  metrics.Meter // Meter for measuring the total time spent in database compaction
-	compReadMeter  metrics.Meter // Meter for measuring the data read during compaction
-	compWriteMeter metrics.Meter // Meter for measuring the data written during compaction
+	getTimer       gometrics.Timer // Timer for measuring the database get request counts and latencies
+	putTimer       gometrics.Timer // Timer for measuring the database put request counts and latencies
+	delTimer       gometrics.Timer // Timer for measuring the database delete request counts and latencies
+	missMeter      gometrics.Meter // Meter for measuring the missed database get requests
+	readMeter      gometrics.Meter // Meter for measuring the database get request data usage
+	writeMeter     gometrics.Meter // Meter for measuring the database put request data usage
+	compTimeMeter  gometrics.Meter // Meter for measuring the total time spent in database compaction
+	compReadMeter  gometrics.Meter // Meter for measuring the data read during compaction
+	compWriteMeter gometrics.Meter // Meter for measuring the data written during compaction
 
 	quitLock sync.Mutex      // Mutex protecting the quit channel access
 	quitChan chan chan error // Quit channel to stop the metrics collection before closing the database
@@ -189,25 +180,15 @@ func (db *LDBDatabase) Meter(prefix string) {
 		return
 	}
 	// Initialize all the metrics collector at the requested prefix
-	// db.getTimer = metrics.NewTimer(prefix + "user/gets")
-	// db.putTimer = metrics.NewTimer(prefix + "user/puts")
-	// db.delTimer = metrics.NewTimer(prefix + "user/dels")
-	// db.missMeter = metrics.NewMeter(prefix + "user/misses")
-	// db.readMeter = metrics.NewMeter(prefix + "user/reads")
-	// db.writeMeter = metrics.NewMeter(prefix + "user/writes")
-	// db.compTimeMeter = metrics.NewMeter(prefix + "compact/time")
-	// db.compReadMeter = metrics.NewMeter(prefix + "compact/input")
-	// db.compWriteMeter = metrics.NewMeter(prefix + "compact/output")
-
-	db.getTimer = metrics.NewRegisteredTimer(prefix+"user/gets", nil)
-	db.putTimer = metrics.NewRegisteredTimer(prefix+"user/puts", nil)
-	db.delTimer = metrics.NewRegisteredTimer(prefix+"user/dels", nil)
-	db.missMeter = metrics.NewRegisteredMeter(prefix+"user/misses", nil)
-	db.readMeter = metrics.NewRegisteredMeter(prefix+"user/reads", nil)
-	db.writeMeter = metrics.NewRegisteredMeter(prefix+"user/writes", nil)
-	db.compTimeMeter = metrics.NewRegisteredMeter(prefix+"compact/time", nil)
-	db.compReadMeter = metrics.NewRegisteredMeter(prefix+"compact/input", nil)
-	db.compWriteMeter = metrics.NewRegisteredMeter(prefix+"compact/output", nil)
+	db.getTimer = metrics.NewTimer(prefix + "user/gets")
+	db.putTimer = metrics.NewTimer(prefix + "user/puts")
+	db.delTimer = metrics.NewTimer(prefix + "user/dels")
+	db.missMeter = metrics.NewMeter(prefix + "user/misses")
+	db.readMeter = metrics.NewMeter(prefix + "user/reads")
+	db.writeMeter = metrics.NewMeter(prefix + "user/writes")
+	db.compTimeMeter = metrics.NewMeter(prefix + "compact/time")
+	db.compReadMeter = metrics.NewMeter(prefix + "compact/input")
+	db.compWriteMeter = metrics.NewMeter(prefix + "compact/output")
 
 	// Create a quit channel for the periodic collector and run it
 	db.quitLock.Lock()
