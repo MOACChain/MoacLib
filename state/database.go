@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"sync"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/MOACChain/MoacLib/common"
 	"github.com/MOACChain/MoacLib/mcdb"
 	"github.com/MOACChain/MoacLib/trie"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 // Trie cache generation limit after which to evic trie nodes from memory.

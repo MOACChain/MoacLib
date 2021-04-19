@@ -45,7 +45,7 @@ const (
 	EpochDuration    uint64 = 30000 // Duration between proof-of-work epochs.
 	CallGas          uint64 = 40    // Once per CALL operation & message call transaction.
 	BalanceGas       uint64 = 700   // The cost of a BALANCE operation.
-	ExtcodeHashGas   uint64 = 700   // Cost of EXTCODEHASH
+	ExtcodeHashGas   uint64 = 400   // Cost of EXTCODEHASH
 	CreateDataGas    uint64 = 200   //
 	CallCreateDepth  uint64 = 1024  // Maximum depth of call/create stack.
 	ExpGas           uint64 = 10    // Once per EXP instruction
@@ -82,12 +82,12 @@ const (
 )
 
 var (
-	GasLimitBoundDivisor   = big.NewInt(1024)                  // The bound divisor of the gas limit, used in update calculations.
-	MinGasLimit            = big.NewInt(5000)                  // Minimum the gas limit may ever be.
-	GenesisGasLimit        = big.NewInt(9000000)               // GasRemaining limit of the Genesis block.
-	TargetGasLimit         = new(big.Int).Set(GenesisGasLimit) // The artificial target
-	DifficultyBoundDivisor = big.NewInt(2048)                  // The bound divisor of the difficulty, used in the update calculations.
-	GenesisDifficulty      = big.NewInt(131072)                // Difficulty of the Genesis block.
-	MinimumDifficulty      = big.NewInt(131072)                // The minimum that the difficulty may ever be.
-	DurationLimit          = big.NewInt(13)                    // The decision boundary on the blocktime duration used to determine whether difficulty should go up or not.
+	GasLimitBoundDivisor   = big.NewInt(1024)                // The bound divisor of the gas limit, used in update calculations.
+	MinGasLimit            = big.NewInt(5000)                // Minimum the gas limit may ever be.
+	GenesisGasLimit        = big.NewInt(9000000)             // GasRemaining limit of the Genesis block.
+	TargetGasLimit         = big.NewInt(18000000)            // The artificial target
+	DifficultyBoundDivisor = big.NewInt(2048)                // The bound divisor of the difficulty, used in the update calculations.
+	GenesisDifficulty      = big.NewInt(131072)              // Difficulty of the Genesis block.
+	MinimumDifficulty      = big.NewInt(131072)              // The minimum that the difficulty may ever be.
+	MaxChainId             = big.NewInt(1152921504606846976) // Maximum value (2**60) for chain id
 )

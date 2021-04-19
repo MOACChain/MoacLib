@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/log"
 	pb "github.com/MOACChain/MoacLib/proto"
 	"github.com/MOACChain/MoacLib/rlp"
 	"github.com/MOACChain/MoacLib/trie"
@@ -76,7 +77,7 @@ func (self *StateDB) RawDump() Dump {
 func (self *StateDB) Dump() []byte {
 	json, err := json.MarshalIndent(self.RawDump(), "", "    ")
 	if err != nil {
-		fmt.Println("dump err", err)
+		log.Infof("dump err: %s", err)
 	}
 
 	return json
@@ -99,7 +100,7 @@ func (self *StateDB) DumpAccountStorage(addrin common.Address) []byte {
 				Nonce:    data.Nonce,
 				Root:     common.Bytes2Hex(data.Root[:]),
 				CodeHash: common.Bytes2Hex(data.CodeHash),
-				Code:     "", //common.Bytes2Hex(obj.Code(self.db)),
+				Code:     "",
 				Storage:  make(map[string]string),
 			}
 			storageIt := trie.NewIterator(obj.getTrie(self.db).NodeIterator(nil))

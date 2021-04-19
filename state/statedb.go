@@ -37,6 +37,17 @@ type revision struct {
 	journalIndex int
 }
 
+type proofList [][]byte
+
+func (n *proofList) Put(key []byte, value []byte) error {
+	*n = append(*n, value)
+	return nil
+}
+
+func (n *proofList) Delete(key []byte) error {
+	panic("not supported")
+}
+
 // StateDBs within the moac protocol are used to store anything
 // within the merkle trie. StateDBs take care of caching and storing
 // nested states. It's the general query interface to retrieve:
@@ -104,24 +115,8 @@ func (self *StateDB) Error() error {
 	return self.dbErr
 }
 
-// Reset clears out all emphemeral state objects from the state db, but keeps
-// the underlying state trie to avoid reloading data for the next operations.
-func (self *StateDB) Reset(root common.Hash) error {
-	tr, err := self.db.OpenTrie(root)
-	if err != nil {
-		return err
-	}
-	self.trie = tr
-	self.stateObjects = make(map[common.Address]*stateObject)
-	self.stateObjectsDirty = make(map[common.Address]struct{})
-	self.thash = common.Hash{}
-	self.bhash = common.Hash{}
-	self.txIndex = 0
-	self.logs = make(map[common.Hash][]*types.Log)
-	self.logSize = 0
-	self.preimages = make(map[common.Hash][]byte)
-	self.clearJournalAndRefund()
-	return nil
+func (self *StateDB) Root() common.Hash {
+	return self.trie.Hash()
 }
 
 func (self *StateDB) AddLog(log *types.Log) {

@@ -31,7 +31,7 @@ var (
 	ShowToPublic           = false
 	VnodeServiceCfg        = "localhost:50062"
 	VnodeBeneficialAddress = ""
-	VnodeIp                = ""
+	VnodeIP                = ""
 	ForceSubnetP2P         = []string{}
 )
 
@@ -54,37 +54,45 @@ var (
 // default is to omitempty Accounts
 // EIP158
 type ChainConfig struct {
-	ChainId            *big.Int      `json:"chainId"`                      // Chain id identifies the current chain and is used for replay protection
-	PanguBlock         *big.Int      `json:"panguBlock,omitempty"`         // Pangu switch block (nil = no fork, 0 = already pangu)
-	NuwaBlock          *big.Int      `json:"nuwaBlock,omitempty"`          // nuwa switch block (nil = no fork, 0 = already on nuwa)
-	FuxiBlock          *big.Int      `json:"fuxiBlock,omitempty"`          // Fuxi switch block for evm opcode upgrade
-	RemoveEmptyAccount bool          `json:"removeEmptyAccount,omitempty"` //Replace EIP158 check and should be set to true
-	Ethash             *EthashConfig `json:"ethash,omitempty"`
+	ChainId             *big.Int      `json:"chainId"`                       // Chain id identifies the current chain and is used for replay protection
+	PanguBlock          *big.Int      `json:"panguBlock,omitempty"`          // Pangu switch block (nil = no fork, 0 = already pangu)
+	NuwaBlock           *big.Int      `json:"nuwaBlock,omitempty"`           // nuwa switch block (nil = no fork, 0 = already on nuwa)
+	FuxiBlock           *big.Int      `json:"fuxiBlock,omitempty"`           // Fuxi switch block for evm opcode upgrade
+	DiffBombDefuseBlock *big.Int      `json:"diffBombDefuseBlock,omitempty"` // Fuxi switch block for defusing difficulty bomb
+	EnableClassicTx     *big.Int      `json:"enableClassicTx,omitempty"`     // Enable tx signed by ethereum tool chain
+	RemoveEmptyAccount  bool          `json:"removeEmptyAccount,omitempty"`  //Replace EIP158 check and should be set to true
+	Ethash              *EthashConfig `json:"ethash,omitempty"`
 }
 
 var (
 	// MainnetChainConfig is the chain parameters to run a node on the main network.
 	MainnetChainConfig = &ChainConfig{
-		ChainId:            big.NewInt(MainNetworkId),
-		PanguBlock:         big.NewInt(0),
-		NuwaBlock:          big.NewInt(647200),       // 2018/08/08 UTC 12:00
-		FuxiBlock:          big.NewInt(100000000000), // do not turn on in production
-		RemoveEmptyAccount: true,
-		Ethash:             new(EthashConfig),
+		ChainId:             big.NewInt(MainNetworkId),
+		PanguBlock:          big.NewInt(0),
+		NuwaBlock:           big.NewInt(647200),        // 2018/08/08 UTC 12:00
+		FuxiBlock:           big.NewInt(6435000),       // 2021/03/05 ~ 10
+		DiffBombDefuseBlock: big.NewInt(6462000),       // 2021/03/31
+		EnableClassicTx:     big.NewInt(1000000000000), // do not enable on mainnetOB
+		RemoveEmptyAccount:  true,
+		Ethash:              new(EthashConfig),
 	}
 
 	// TestnetChainConfig contains the chain parameters to run a node on the test network.
 	TestnetChainConfig = &ChainConfig{
-		ChainId:            big.NewInt(TestNetworkId),
-		PanguBlock:         big.NewInt(0),
-		NuwaBlock:          big.NewInt(616700),  // 2018/07/30
-		FuxiBlock:          big.NewInt(4900000), // 2020/12/30
-		RemoveEmptyAccount: true,
-		Ethash:             new(EthashConfig),
+		ChainId:             big.NewInt(TestNetworkId),
+		PanguBlock:          big.NewInt(0),
+		NuwaBlock:           big.NewInt(616700),  // 2018/07/30
+		FuxiBlock:           big.NewInt(4900000), // 2020/12/30
+		DiffBombDefuseBlock: big.NewInt(5042000), // 2021/03/16
+		EnableClassicTx:     big.NewInt(5260000), // 2021/04/20
+		RemoveEmptyAccount:  true,
+		Ethash:              new(EthashConfig),
 	}
 
 	AllProtocolChanges = &ChainConfig{
 		big.NewInt(DevNetworkId),
+		big.NewInt(0),
+		big.NewInt(0),
 		big.NewInt(0),
 		big.NewInt(0),
 		big.NewInt(0),
@@ -126,8 +134,8 @@ func (c *ChainConfig) String() string {
 	default:
 		engine = "unknown"
 	}
-	return fmt.Sprintf("{ChainID: %v Pangu: %v Nuwa: %v Fuxi: %v Engine: %v}",
-		c.ChainId, c.PanguBlock, c.NuwaBlock, c.FuxiBlock, engine)
+	return fmt.Sprintf("{ChainID: %v Pangu: %v Nuwa: %v Fuxi: %v DiffBomb: %v, ClassicTx: %v, Engine: %v}",
+		c.ChainId, c.PanguBlock, c.NuwaBlock, c.FuxiBlock, c.DiffBombDefuseBlock, c.EnableClassicTx, engine)
 }
 
 // IsPangu returns whether num is either equal to the pangu block or greater.

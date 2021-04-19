@@ -68,8 +68,8 @@ func (c *EthashConfig) String() string {
 // PANGU 0.8
 // May use other signer if the protocol changes
 // Following interfaces are following GETH 1.8
-
 func MakeSigner(config ChainConfig, blockNumber *big.Int) Signer {
+	log.Debugf("Make crypto signer with chain id: %d", config.GetChainId())
 	return NewPanguSigner(config.GetChainId())
 }
 
@@ -96,7 +96,7 @@ func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, err
 //
 func Sender(signer Signer, tx *Transaction) (common.Address, error) {
 	//if system contract, return address {100}
-	if tx.TxData.GetSystemFlag() > 0 {
+	if tx.TxData.SystemContract > 0 {
 		return common.BytesToAddress([]byte{100}), nil
 	}
 
@@ -155,6 +155,7 @@ type PanguSigner struct {
 // func NewEIP155Signer(chainId *big.Int) EIP155Signer {
 //Following the EIP155 rules
 func NewPanguSigner(inchainID *big.Int) PanguSigner {
+	// set to chain id to 0 if nil
 	if inchainID == nil {
 		inchainID = new(big.Int)
 	}
@@ -206,21 +207,35 @@ func (ps PanguSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big
 // and ShardingFlag
 // 2018/04/23
 // Add Via field
-
 func (ps PanguSigner) Hash(tx *Transaction) common.Hash {
-	log.Debugf("[core/types/transaction_signing.go->PanguSigner.Hash]:%v", ps.chainId)
-	return common.RlpHash([]interface{}{
-		tx.TxData.AccountNonce,
-		tx.TxData.SystemContract,
-		tx.TxData.Price,
-		tx.TxData.GasLimit,
-		tx.TxData.Recipient,
-		tx.TxData.Amount,
-		tx.TxData.Payload,
-		tx.TxData.ShardingFlag,
-		tx.TxData.Via,
-		ps.chainId, uint(0), uint(0),
-	})
+	if tx.IsClassic() {
+		return common.RlpHash([]interface{}{
+			tx.TxData.AccountNonce,
+			tx.TxData.Price,
+			tx.TxData.GasLimit,
+			tx.TxData.Recipient,
+			tx.TxData.Amount,
+			tx.TxData.Payload,
+			ps.chainId,
+			uint(0),
+			uint(0),
+		})
+	} else {
+		return common.RlpHash([]interface{}{
+			tx.TxData.AccountNonce,
+			tx.TxData.SystemContract,
+			tx.TxData.Price,
+			tx.TxData.GasLimit,
+			tx.TxData.Recipient,
+			tx.TxData.Amount,
+			tx.TxData.Payload,
+			tx.TxData.ShardingFlag,
+			tx.TxData.Via,
+			ps.chainId,
+			uint(0),
+			uint(0),
+		})
+	}
 }
 
 /*
@@ -239,7 +254,7 @@ func (ps PanguSigner) Sender(tx *Transaction) (common.Address, error) {
 	}
 
 	//Get the value from input TX data.V to
-	V := new(big.Int).Sub(tx.TxData.V, ps.chainIdMul)
+	V := new(big.Int).Sub(tx.TxData.Vx(), ps.chainIdMul)
 	var big8 = big.NewInt(8)
 	V.Sub(V, big8)
 	//Need to make sure the input is 27,
@@ -298,7 +313,6 @@ func DeriveChainId(v *big.Int) *big.Int {
 		// No chainID is included in the V
 		if v == 27 || v == 28 {
 			//This should not happen in MOAC network
-
 			return new(big.Int)
 		}
 		//EIP155 compute

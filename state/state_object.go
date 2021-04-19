@@ -35,7 +35,7 @@ var emptyCodeHash = crypto.Keccak256(nil)
 type Code []byte
 
 func (self Code) String() string {
-	return string(self) //strings.Join(Disassemble(self), " ")
+	return string(self)
 }
 
 type Storage map[common.Hash]common.Hash
@@ -238,6 +238,11 @@ func (self *stateObject) updateTrie(db Database) Trie {
 func (self *stateObject) updateRoot(db Database) {
 	self.updateTrie(db)
 	self.data.Root = self.trie.Hash()
+}
+
+// Root returns the root of the trie inside state object
+func (self *stateObject) Root() common.Hash {
+	return self.data.Root
 }
 
 // CommitTrie the storage trie of the object to dwb.

@@ -27,6 +27,7 @@ import (
 	"github.com/MOACChain/MoacLib/common"
 	"github.com/MOACChain/MoacLib/common/hexutil"
 	"github.com/MOACChain/MoacLib/crypto"
+	"github.com/MOACChain/MoacLib/log"
 	"github.com/MOACChain/MoacLib/rlp"
 )
 
@@ -35,6 +36,8 @@ import (
 var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
 	errNoSigner   = errors.New("missing signing methods")
+
+	IsClassicBit = 216
 )
 
 // deriveSigner makes a *best* guess about which signer to use.
@@ -45,15 +48,51 @@ func deriveSigner(V *big.Int) Signer {
 	return NewPanguSigner(DeriveChainId(V))
 }
 
+type ClassicTxdata struct {
+	AccountNonce uint64          `json:"nonce"    gencodec:"required"`
+	Price        *big.Int        `json:"gasPrice" gencodec:"required"`
+	GasLimit     *big.Int        `json:"gas"      gencodec:"required"`
+	Recipient    *common.Address `json:"to"       rlp:"nil"`
+	Amount       *big.Int        `json:"value"    gencodec:"required"`
+	Payload      []byte          `json:"input"    gencodec:"required"`
+	V            *big.Int        `json:"v" gencodec:"required"`
+	R            *big.Int        `json:"r" gencodec:"required"`
+	S            *big.Int        `json:"s" gencodec:"required"`
+}
+
+func (classictxdata ClassicTxdata) String() string {
+	return fmt.Sprintf(`
+		TX Classic:
+		To:       %x
+		Nonce:    %d
+		GasPrice: 0x%x
+		GasLimit  0x%x
+		Value:    0x%x
+		Data:     0x%x
+		R:        0x%x
+		S:        0x%x
+		V:        %d
+	`,
+		classictxdata.Recipient,
+		classictxdata.AccountNonce,
+		classictxdata.Price,
+		classictxdata.GasLimit,
+		classictxdata.Amount,
+		classictxdata.Payload,
+		classictxdata.R,
+		classictxdata.S,
+		classictxdata.V,
+	)
+}
+
 type Transaction struct {
 	TxData      txdata
 	DirCallSent bool
 
 	// caches
-	hash    atomic.Value
-	size    atomic.Value //size of the txdata
-	from    atomic.Value
-	execblk big.Int
+	hash atomic.Value
+	size atomic.Value //size of the txdata
+	from atomic.Value
 }
 
 /*
@@ -80,9 +119,30 @@ type txdata struct {
 	Hash *common.Hash `json:"hash" rlp:"-"`
 }
 
-func (tdata *txdata) GetShardingFlag() uint64 { return tdata.ShardingFlag }
-func (tdata *txdata) GetSystemFlag() uint64   { return tdata.SystemContract }
-func (tdata *txdata) GetAmount() *big.Int     { return tdata.Amount }
+// Vx() returns the V value without the isclassic bit
+func (tdata *txdata) Vx() *big.Int {
+	// remove isclassic bit before process
+	Vb := new(big.Int)
+	Vb = Vb.Set(tdata.V)
+	Vb = Vb.SetBit(Vb, IsClassicBit, 0)
+	return Vb
+}
+
+func (tdata *txdata) IsClassic() bool {
+	return tdata.V.Bit(IsClassicBit) == 1
+}
+
+func (tdata *txdata) SetIsClassic(isClassic bool) {
+	// with isclassicBit = 216, this will leave the highest 4 bytes
+	// unchanged and set the 5th highest byte to 1
+	if isClassic {
+		tdata.V = tdata.V.SetBit(tdata.V, IsClassicBit, 1)
+	} else {
+		if tdata.V.Bit(IsClassicBit) == 1 {
+			tdata.V = tdata.V.SetBit(tdata.V, IsClassicBit, 0)
+		}
+	}
+}
 
 func (tdata *txdata) SetShardingFlag(inflag uint64) {
 	tdata.ShardingFlag = inflag
@@ -152,12 +212,12 @@ func newTransaction(nonce uint64, to *common.Address, amount, gasLimit, gasPrice
 
 // ChainId returns which chain id this transaction was signed for (if at all)
 func (tx *Transaction) ChainId() *big.Int {
-	return DeriveChainId(tx.TxData.V)
+	return DeriveChainId(tx.TxData.Vx())
 }
 
 // Protected returns whether the transaction is protected from replay protection.
 func (tx *Transaction) Protected() bool {
-	return isProtectedV(tx.TxData.V)
+	return isProtectedV(tx.TxData.Vx())
 }
 
 func isProtectedV(V *big.Int) bool {
@@ -174,9 +234,13 @@ func (tx *Transaction) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, &tx.TxData)
 }
 
+// MarshalBinary returns the canonical encoding of the transaction.
+func (tx *Transaction) MarshalBinary() ([]byte, error) {
+	return rlp.EncodeToBytes(tx.TxData)
+}
+
 // DecodeRLP implements rlp.Decoder
 // Add the check on the data size
-
 func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 
 	_, size, _ := s.Kind()
@@ -195,23 +259,56 @@ func (tx *Transaction) MarshalJSON() ([]byte, error) {
 	return data.MarshalJSON()
 }
 
-// UnmarshalJSON decodes the chan3 RPC transaction format.
+// UnmarshalJSON decodes the chain3 RPC transaction format.
 func (tx *Transaction) UnmarshalJSON(input []byte) error {
 	var dec txdata
 	if err := dec.UnmarshalJSON(input); err != nil {
 		return err
 	}
 	var V byte
-	if isProtectedV(dec.V) {
-		chainId := DeriveChainId(dec.V).Uint64()
-		V = byte(dec.V.Uint64() - 35 - 2*chainId)
+	if isProtectedV(dec.Vx()) {
+		chainId := DeriveChainId(dec.Vx()).Uint64()
+		V = byte(dec.Vx().Uint64() - 35 - 2*chainId)
 	} else {
-		V = byte(dec.V.Uint64() - 27)
+		V = byte(dec.Vx().Uint64() - 27)
 	}
 	if !crypto.ValidateSignatureValues(V, dec.R, dec.S, false) {
 		return ErrInvalidSig
 	}
 	*tx = Transaction{TxData: dec}
+	return nil
+}
+
+func (tx *Transaction) UnmarshalClassicRLP(encodeTx hexutil.Bytes) error {
+	var classictxdata ClassicTxdata
+	if err := rlp.DecodeBytes(encodeTx, &classictxdata); err != nil {
+		log.Debugf("unmarshal classic tx rlp failed, err: %v", err)
+		return err
+	}
+
+	// set common txdata fields
+	tx.TxData.AccountNonce = classictxdata.AccountNonce
+
+	if classictxdata.Price != nil {
+		tx.TxData.Price = new(big.Int).Set(classictxdata.Price)
+	}
+	if classictxdata.GasLimit != nil {
+		tx.TxData.GasLimit = new(big.Int).Set(classictxdata.GasLimit)
+	}
+	if classictxdata.Amount != nil {
+		tx.TxData.Amount = new(big.Int).Set(classictxdata.Amount)
+	}
+	tx.TxData.Recipient = classictxdata.Recipient
+	tx.TxData.Payload = common.CopyBytes(classictxdata.Payload)
+	tx.TxData.V = classictxdata.V
+	tx.TxData.R = classictxdata.R
+	tx.TxData.S = classictxdata.S
+
+	// set defaults to other moac fields
+	tx.TxData.Via = nil
+	tx.TxData.SystemContract = 0
+	tx.TxData.ShardingFlag = 0
+
 	return nil
 }
 
@@ -222,12 +319,12 @@ func (tx *Transaction) Value() *big.Int          { return new(big.Int).Set(tx.Tx
 func (tx *Transaction) Nonce() uint64            { return tx.TxData.AccountNonce }
 func (tx *Transaction) CheckNonce() bool         { return true }
 func (tx *Transaction) UpdateNonce(nonce uint64) { tx.TxData.AccountNonce = nonce }
+func (tx *Transaction) IsClassic() bool          { return tx.TxData.IsClassic() }
+func (tx *Transaction) Via() *common.Address     { return tx.TxData.Via }
 
 //functions to pass flag values
-func (tx *Transaction) GetShardingFlag() uint64 { return tx.TxData.GetShardingFlag() }
-func (tx *Transaction) GetSystemFlag() uint64   { return tx.TxData.GetSystemFlag() }
-func (tx *Transaction) ShardingFlag() uint64    { return tx.TxData.GetShardingFlag() }
-func (tx *Transaction) SystemFlag() uint64      { return tx.TxData.GetSystemFlag() }
+func (tx *Transaction) ShardingFlag() uint64 { return tx.TxData.ShardingFlag }
+func (tx *Transaction) SystemFlag() uint64   { return tx.TxData.SystemContract }
 
 //Process the controlFlag in tx.TxData
 func (tx *Transaction) SetShardingFlag(inflag uint64) { tx.TxData.ShardingFlag = inflag }
@@ -289,7 +386,7 @@ func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 		price:           new(big.Int).Set(tx.TxData.Price),
 		gasLimit:        new(big.Int).Set(tx.TxData.GasLimit),
 		to:              tx.TxData.Recipient,
-		amount:          tx.TxData.Amount,
+		amount:          new(big.Int).Set(tx.TxData.Amount),
 		data:            tx.TxData.Payload,
 		checkNonce:      true,
 		system:          tx.TxData.SystemContract,
@@ -338,7 +435,7 @@ func (tx *Transaction) GetSender() string {
 	if tx.TxData.V != nil {
 		// make a best guess about the signer and use that to derive
 		// the sender.
-		signer := deriveSigner(tx.TxData.V)
+		signer := deriveSigner(tx.TxData.Vx())
 		if f, err := Sender(signer, tx); err != nil { // derive but don't cache
 			from = "[invalid sender: invalid sig]"
 		} else {
@@ -358,7 +455,7 @@ func (tx *Transaction) String() string {
 	if tx.TxData.V != nil {
 		// make a best guess about the signer and use that to derive
 		// the sender.
-		signer := deriveSigner(tx.TxData.V)
+		signer := deriveSigner(tx.TxData.Vx())
 		if f, err := Sender(signer, tx); err != nil { // derive but don't cache
 			from = "[invalid sender: invalid sig]"
 		} else {
@@ -376,19 +473,24 @@ func (tx *Transaction) String() string {
 	if tx.TxData.Via == nil {
 		return fmt.Sprintf(`
 		TX(%x)
-		Contract: %v
-		From:     %s
-		To:       %s
-		Nonce:    %v
-		GasPrice: %#x
-		GasLimit  %#x
-		Value:    %#x
-		Data:     0x%x
-		SysCnt:	  %v
+		IsClassic: %t
+		ReplayPtc: %t(V=%d)
+		Contract:  %v
+		From:      %s
+		To:        %s
+		Nonce:     %v
+		GasPrice:  %#x
+		GasLimit   %#x
+		Value:     %#x
+		Data:      0x%x
+		SysCnt:	   %v
 		ShardingFlag: %v
 		Via: %v
 	`,
 			tx.Hash(),
+			tx.TxData.IsClassic(),
+			tx.Protected(),
+			tx.TxData.Vx(),
 			tx.TxData.Recipient == nil,
 			from,
 			to,
@@ -397,8 +499,8 @@ func (tx *Transaction) String() string {
 			tx.TxData.GasLimit,
 			tx.TxData.Amount,
 			tx.TxData.Payload,
-			tx.TxData.GetSystemFlag(),
-			tx.TxData.GetShardingFlag(),
+			tx.TxData.SystemContract,
+			tx.TxData.ShardingFlag,
 			tx.TxData.Via,
 		)
 	} else {
@@ -425,8 +527,8 @@ func (tx *Transaction) String() string {
 			tx.TxData.GasLimit,
 			tx.TxData.Amount,
 			tx.TxData.Payload,
-			tx.TxData.GetSystemFlag(),
-			tx.TxData.GetShardingFlag(),
+			tx.TxData.SystemContract,
+			tx.TxData.ShardingFlag,
 			tx.TxData.Via.String(),
 		)
 	}
