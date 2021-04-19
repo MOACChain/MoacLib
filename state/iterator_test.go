@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/innowells/moac-lib/common"
+	"github.com/MOACChain/MoacLib/common"
 )
 
 // Tests that the node iterator indeed walks over the entire database contents.

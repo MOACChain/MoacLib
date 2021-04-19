@@ -29,8 +29,8 @@ import (
 	"testing/quick"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/mcdb"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/mcdb"
 )
 
 func init() {

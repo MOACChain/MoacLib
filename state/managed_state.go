@@ -19,8 +19,8 @@ package state
 import (
 	"sync"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/log"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/log"
 )
 
 type account struct {

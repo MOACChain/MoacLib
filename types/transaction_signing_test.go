@@ -21,10 +21,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/crypto"
-	"github.com/innowells/moac-lib/log"
-	"github.com/innowells/moac-lib/rlp"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/crypto"
+	"github.com/MOACChain/MoacLib/log"
+	"github.com/MOACChain/MoacLib/rlp"
 )
 
 var emptyAddress = common.StringToAddress("")

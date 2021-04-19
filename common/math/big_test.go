@@ -22,7 +22,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/innowells/moac-lib/common"
+	"github.com/MOACChain/MoacLib/common"
 )
 
 func TestHexOrDecimal256(t *testing.T) {

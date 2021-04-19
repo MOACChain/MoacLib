@@ -23,11 +23,11 @@ import (
 	"math/big"
 
 	"encoding/json"
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/crypto"
-	"github.com/innowells/moac-lib/rlp"
-	"github.com/innowells/moac-lib/trie"
-	"github.com/innowells/moac-lib/types"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/crypto"
+	"github.com/MOACChain/MoacLib/rlp"
+	"github.com/MOACChain/MoacLib/trie"
+	"github.com/MOACChain/MoacLib/types"
 )
 
 var emptyCodeHash = crypto.Keccak256(nil)

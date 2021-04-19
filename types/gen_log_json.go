@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/common/hexutil"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/common/hexutil"
 )
 
 func (l Log) MarshalJSON() ([]byte, error) {

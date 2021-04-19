@@ -25,9 +25,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/crypto"
-	"github.com/innowells/moac-lib/rlp"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/crypto"
+	"github.com/MOACChain/MoacLib/rlp"
 )
 
 // The values in those tests are from the Transaction Tests

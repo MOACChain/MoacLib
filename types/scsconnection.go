@@ -1,7 +1,7 @@
 package types
 
 import (
-	pb "github.com/innowells/moac-lib/proto"
+	pb "github.com/MOACChain/MoacLib/proto"
 )
 
 type ScsServerConnection struct {

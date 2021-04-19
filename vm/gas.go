@@ -19,7 +19,7 @@ package vm
 import (
 	"github.com/holiman/uint256"
 
-	"github.com/innowells/moac-lib/params"
+	"github.com/MOACChain/MoacLib/params"
 )
 
 const (

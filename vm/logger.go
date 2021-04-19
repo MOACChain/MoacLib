@@ -23,10 +23,10 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/common/hexutil"
-	"github.com/innowells/moac-lib/common/math"
-	"github.com/innowells/moac-lib/types"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/common/hexutil"
+	"github.com/MOACChain/MoacLib/common/math"
+	"github.com/MOACChain/MoacLib/types"
 )
 
 // Storage represents a contract's storage.

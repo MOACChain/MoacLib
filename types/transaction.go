@@ -24,10 +24,10 @@ import (
 	"math/big"
 	"sync/atomic"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/common/hexutil"
-	"github.com/innowells/moac-lib/crypto"
-	"github.com/innowells/moac-lib/rlp"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/common/hexutil"
+	"github.com/MOACChain/MoacLib/crypto"
+	"github.com/MOACChain/MoacLib/rlp"
 )
 
 //go:generate gencodec -type txdata -field-override txdataMarshaling -out gen_tx_json.go

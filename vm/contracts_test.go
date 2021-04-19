@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/innowells/moac-lib/common"
+	"github.com/MOACChain/MoacLib/common"
 )
 
 // precompiledTest defines the input/output pairs for precompiled contract tests.

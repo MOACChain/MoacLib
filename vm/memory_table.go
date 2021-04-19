@@ -20,7 +20,7 @@ import (
 	"math/big"
 
 	"github.com/holiman/uint256"
-	"github.com/innowells/moac-lib/common/math"
+	"github.com/MOACChain/MoacLib/common/math"
 )
 
 func memorySha3(stack *Stack) *big.Int {

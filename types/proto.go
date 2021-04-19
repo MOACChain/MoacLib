@@ -3,8 +3,8 @@ package types
 import (
 	"math/big"
 
-	"github.com/innowells/moac-lib/common"
-	pb "github.com/innowells/moac-lib/proto"
+	"github.com/MOACChain/MoacLib/common"
+	pb "github.com/MOACChain/MoacLib/proto"
 )
 
 type ShakeInfo struct {

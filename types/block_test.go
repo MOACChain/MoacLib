@@ -23,8 +23,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/rlp"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/rlp"
 )
 
 // from bcValidBlockTest.json, "SimpleTx"

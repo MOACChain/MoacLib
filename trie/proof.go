@@ -21,10 +21,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/crypto/sha3"
-	"github.com/innowells/moac-lib/log"
-	"github.com/innowells/moac-lib/rlp"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/crypto/sha3"
+	"github.com/MOACChain/MoacLib/log"
+	"github.com/MOACChain/MoacLib/rlp"
 )
 
 // Prove constructs a merkle proof for key. The result contains all

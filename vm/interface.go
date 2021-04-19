@@ -19,8 +19,8 @@ package vm
 import (
 	"math/big"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/types"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/types"
 )
 
 // StateDB is an EVM database for full state querying.

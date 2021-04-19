@@ -20,9 +20,9 @@ import (
 	"math/big"
 
 	"github.com/holiman/uint256"
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/common/math"
-	"github.com/innowells/moac-lib/params"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/common/math"
+	"github.com/MOACChain/MoacLib/params"
 )
 
 // memoryGasCosts calculates the quadratic gas for memory expansion. It does so

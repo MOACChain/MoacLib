@@ -19,7 +19,7 @@ package vm
 import (
 	"fmt"
 
-	"github.com/innowells/moac-lib/params"
+	"github.com/MOACChain/MoacLib/params"
 )
 
 func makeStackFunc(pop, push int) stackValidationFunc {

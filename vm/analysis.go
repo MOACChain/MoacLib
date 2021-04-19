@@ -19,7 +19,7 @@ package vm
 import (
 	"math/big"
 
-	"github.com/innowells/moac-lib/common"
+	"github.com/MOACChain/MoacLib/common"
 )
 
 // destinations stores one map per contract (keyed by hash of code).

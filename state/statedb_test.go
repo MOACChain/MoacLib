@@ -30,9 +30,9 @@ import (
 
 	check "gopkg.in/check.v1"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/types"
-	"github.com/innowells/moac-lib/mcdb"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/types"
+	"github.com/MOACChain/MoacLib/mcdb"
 )
 
 // Tests that updating a state trie does not leak any database writes prior to

@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/params"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/params"
 )
 
 func TestByteOp(t *testing.T) {

@@ -21,7 +21,7 @@ import (
 
 	"fmt"
 
-	"github.com/innowells/moac-lib/common"
+	"github.com/MOACChain/MoacLib/common"
 )
 
 // ContractRef is a reference to the contract's backing object

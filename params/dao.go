@@ -19,7 +19,7 @@ package params
 import (
 	"math/big"
 
-	"github.com/innowells/moac-lib/common"
+	"github.com/MOACChain/MoacLib/common"
 )
 
 // DAOForkBlockExtra is the block header extra-data field to set for the DAO fork

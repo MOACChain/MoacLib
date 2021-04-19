@@ -3,7 +3,7 @@
 package types
 
 import (
-	"github.com/innowells/moac-lib/common"
+	"github.com/MOACChain/MoacLib/common"
 )
 
 type QueryContract struct {

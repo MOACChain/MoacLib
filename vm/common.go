@@ -20,8 +20,8 @@ import (
 	"math/big"
 
 	"github.com/holiman/uint256"
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/common/math"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/common/math"
 )
 
 // calculates the memory size required for a step

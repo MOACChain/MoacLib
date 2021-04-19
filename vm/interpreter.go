@@ -19,11 +19,11 @@ package vm
 import (
 	"sync/atomic"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/common/math"
-	"github.com/innowells/moac-lib/crypto"
-	"github.com/innowells/moac-lib/log"
-	"github.com/innowells/moac-lib/params"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/common/math"
+	"github.com/MOACChain/MoacLib/crypto"
+	"github.com/MOACChain/MoacLib/log"
+	"github.com/MOACChain/MoacLib/params"
 )
 
 // Config are the configuration options for the Interpreter

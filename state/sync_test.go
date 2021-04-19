@@ -21,10 +21,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/innowells/moac-lib/crypto"
-	"github.com/innowells/moac-lib/mcdb"
-	"github.com/innowells/moac-lib/trie"
-	"github.com/innowells/moac-lib/common"
+	"github.com/MOACChain/MoacLib/crypto"
+	"github.com/MOACChain/MoacLib/mcdb"
+	"github.com/MOACChain/MoacLib/trie"
+	"github.com/MOACChain/MoacLib/common"
 )
 
 // testAccount is the data associated with an account used by the state tests.

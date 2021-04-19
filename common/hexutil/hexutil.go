@@ -37,7 +37,7 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/innowells/moac-lib/log"
+	"github.com/MOACChain/MoacLib/log"
 )
 
 const uintBits = 32 << (uint64(^uint(0)) >> 63)
@@ -74,25 +74,10 @@ func Decode(input string) ([]byte, error) {
 	if len(input) == 0 {
 		return nil, ErrEmptyString
 	}
-	//
+
+	// check for missing '0x' prefix
 	if !has0xPrefix(input) {
-		//if len(input) < 40 {
-		// if input[0] == 'm' {
-
-		// 	res, outVersion, err := base58util.MoacDecode(input)
-
-		// 	if err != nil {
-		// 		log.Debugf("Decode address as MOAC address failed")
-		// 		return nil, err
-		// 	} else if outVersion != MoacVersion {
-		// 		//fmt.Printf("MOAC version mismatch: %X .vs. %X\n", outVersion, MoacVersion)
-		// 		return nil, ErrMoacVersion
-		// 	}
-		// 	return res, err
-
-		// } else {
 		return nil, ErrMissingPrefix
-		// }
 	}
 
 	//decode the string start with '0x'

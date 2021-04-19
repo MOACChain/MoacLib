@@ -19,9 +19,9 @@ package state
 import (
 	"bytes"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/rlp"
-	"github.com/innowells/moac-lib/trie"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/rlp"
+	"github.com/MOACChain/MoacLib/trie"
 )
 
 // NewStateSync create a new state trie download scheduler.

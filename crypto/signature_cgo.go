@@ -23,8 +23,8 @@ import (
 	"crypto/elliptic"
 	"fmt"
 
-	"github.com/innowells/moac-lib/common/math"
-	"github.com/innowells/moac-lib/crypto/secp256k1"
+	"github.com/MOACChain/MoacLib/common/math"
+	"github.com/MOACChain/MoacLib/crypto/secp256k1"
 )
 
 func Ecrecover(hash, sig []byte) ([]byte, error) {

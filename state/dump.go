@@ -20,11 +20,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/innowells/moac-lib/common"
-	pb "github.com/innowells/moac-lib/proto"
-	"github.com/innowells/moac-lib/rlp"
-	"github.com/innowells/moac-lib/trie"
-	libtypes "github.com/innowells/moac-lib/types"
+	"github.com/MOACChain/MoacLib/common"
+	pb "github.com/MOACChain/MoacLib/proto"
+	"github.com/MOACChain/MoacLib/rlp"
+	"github.com/MOACChain/MoacLib/trie"
+	libtypes "github.com/MOACChain/MoacLib/types"
 )
 
 type DumpAccount struct {

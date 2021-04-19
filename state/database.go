@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/mcdb"
-	"github.com/innowells/moac-lib/trie"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/mcdb"
+	"github.com/MOACChain/MoacLib/trie"
 	lru "github.com/hashicorp/golang-lru"
 )
 

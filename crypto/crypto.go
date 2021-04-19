@@ -28,10 +28,10 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/common/math"
-	"github.com/innowells/moac-lib/crypto/sha3"
-	"github.com/innowells/moac-lib/rlp"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/common/math"
+	"github.com/MOACChain/MoacLib/crypto/sha3"
+	"github.com/MOACChain/MoacLib/rlp"
 )
 
 var (

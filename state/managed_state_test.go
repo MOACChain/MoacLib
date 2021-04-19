@@ -19,8 +19,8 @@ package state
 import (
 	"testing"
 
-	"github.com/innowells/moac-lib/common"
-	"github.com/innowells/moac-lib/mcdb"
+	"github.com/MOACChain/MoacLib/common"
+	"github.com/MOACChain/MoacLib/mcdb"
 )
 
 var addr = common.BytesToAddress([]byte("test"))

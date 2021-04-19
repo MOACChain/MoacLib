@@ -25,7 +25,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/innowells/moac-lib/mcdb"
+	"github.com/MOACChain/MoacLib/mcdb"
 )
 
 func newTestLDB() (*mcdb.LDBDatabase, func()) {
