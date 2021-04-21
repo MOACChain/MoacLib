@@ -1,4 +1,4 @@
-// Copyright 2017 The MOAC-core Authors
+// Copyright 2017 The go-ethereum Authors
 
 package types
 

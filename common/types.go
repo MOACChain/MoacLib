@@ -1,18 +1,18 @@
-// Copyright 2015 The MOAC-core Authors
-// This file is part of the MOAC-core library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The MOAC-core library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The MOAC-core library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package common
 
@@ -43,7 +43,6 @@ const (
 var (
 	hashT    = reflect.TypeOf(Hash{})
 	addressT = reflect.TypeOf(Address{})
-	//moacaddressT = reflect.TypeOf(MoacAddress{})
 )
 
 // Hash represents the 32 byte Keccak256 hash of arbitrary data.
@@ -76,7 +75,6 @@ func (h Hash) Hex() string   { return hexutil.Encode(h[:]) }
 // output during logging.
 func (h Hash) TerminalString() string {
 	return h.String()
-	//return fmt.Sprintf("%x…%x", h[:3], h[29:])
 }
 
 // String implements the stringer interface and is used also by the logger when
@@ -184,7 +182,7 @@ func IsHexAddress(s string) bool {
 
 // Get the string representation of the underlying address
 func (a Address) Str() string {
-	//fmt.Println("Use Str() in types.go")
+
 	return string(a[:])
 }
 func (a Address) Bytes() []byte { return a[:] }
@@ -210,7 +208,7 @@ func (a Address) Hex() string {
 			result[i] -= 32
 		}
 	}
-	// fmt.Println("Use interface HEX types.go")
+
 	return "0x" + string(result)
 }
 
@@ -233,7 +231,7 @@ func (a Address) HexWithout0x() string {
 			result[i] -= 32
 		}
 	}
-	// fmt.Println("Use interface HEX types.go")
+
 	return string(result)
 }
 
@@ -247,7 +245,7 @@ func (a Address) String() string {
 // Format implements fmt.Formatter, forcing the byte slice to be formatted as is,
 // without going through the stringer interface used for logging.
 func (a Address) Format(s fmt.State, c rune) {
-	// fmt.Println("Use interface format types.go")
+
 	fmt.Fprintf(s, "%"+string(c), a[:])
 }
 
@@ -290,11 +288,7 @@ func (a *Address) UnmarshalJSON(input []byte) error {
 		inputStr = inputStr[:len(inputStr)-1]
 	}
 	log.Debugf("[common/types.go->Address.UnmarshalJSON] input=" + inputStr)
-	// if IsMoacAddress(inputStr) {
-	// 	log.Debugf("It is a Moac address.")
-	// 	a.Set(MoacToAddress(inputStr))
-	// 	return nil
-	// }
+
 	return hexutil.UnmarshalFixedJSON(addressT, input, a[:])
 }
 
