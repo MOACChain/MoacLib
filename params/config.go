@@ -1,18 +1,18 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 package params
 
@@ -54,43 +54,47 @@ var (
 // default is to omitempty Accounts
 // EIP158
 type ChainConfig struct {
-	ChainId             *big.Int      `json:"chainId"`                       // Chain id identifies the current chain and is used for replay protection
-	PanguBlock          *big.Int      `json:"panguBlock,omitempty"`          // Pangu switch block (nil = no fork, 0 = already pangu)
-	NuwaBlock           *big.Int      `json:"nuwaBlock,omitempty"`           // nuwa switch block (nil = no fork, 0 = already on nuwa)
-	FuxiBlock           *big.Int      `json:"fuxiBlock,omitempty"`           // Fuxi switch block for evm opcode upgrade
-	DiffBombDefuseBlock *big.Int      `json:"diffBombDefuseBlock,omitempty"` // Fuxi switch block for defusing difficulty bomb
-	EnableClassicTx     *big.Int      `json:"enableClassicTx,omitempty"`     // Enable tx signed by ethereum tool chain
-	RemoveEmptyAccount  bool          `json:"removeEmptyAccount,omitempty"`  //Replace EIP158 check and should be set to true
-	Ethash              *EthashConfig `json:"ethash,omitempty"`
+	ChainId               *big.Int      `json:"chainId"`                         // Chain id identifies the current chain and is used for replay protection
+	PanguBlock            *big.Int      `json:"panguBlock,omitempty"`            // Pangu switch block (nil = no fork, 0 = already pangu)
+	NuwaBlock             *big.Int      `json:"nuwaBlock,omitempty"`             // nuwa switch block (nil = no fork, 0 = already on nuwa)
+	FuxiBlock             *big.Int      `json:"fuxiBlock,omitempty"`             // Fuxi switch block for evm opcode upgrade
+	DiffBombDefuseBlock   *big.Int      `json:"diffBombDefuseBlock,omitempty"`   // Fuxi switch block for defusing difficulty bomb
+	EnableClassicTx       *big.Int      `json:"enableClassicTx,omitempty"`       // Enable tx signed by ethereum tool chain
+	EnableFuxiPrecompiled *big.Int      `json:"enableFuxiPrecompiled,omitempty"` // Enable new precompiled contracts in fuxi
+	RemoveEmptyAccount    bool          `json:"removeEmptyAccount,omitempty"`    //Replace EIP158 check and should be set to true
+	Ethash                *EthashConfig `json:"ethash,omitempty"`
 }
 
 var (
 	// MainnetChainConfig is the chain parameters to run a node on the main network.
 	MainnetChainConfig = &ChainConfig{
-		ChainId:             big.NewInt(MainNetworkId),
-		PanguBlock:          big.NewInt(0),
-		NuwaBlock:           big.NewInt(647200),        // 2018/08/08 UTC 12:00
-		FuxiBlock:           big.NewInt(6435000),       // 2021/03/05 ~ 10
-		DiffBombDefuseBlock: big.NewInt(6462000),       // 2021/03/31
-		EnableClassicTx:     big.NewInt(1000000000000), // do not enable on mainnetOB
-		RemoveEmptyAccount:  true,
-		Ethash:              new(EthashConfig),
+		ChainId:               big.NewInt(MainNetworkId),
+		PanguBlock:            big.NewInt(0),
+		NuwaBlock:             big.NewInt(647200),        // 2018/08/08 UTC 12:00
+		FuxiBlock:             big.NewInt(6435000),       // 2021/03/05 ~ 10
+		DiffBombDefuseBlock:   big.NewInt(6462000),       // 2021/03/31
+		EnableClassicTx:       big.NewInt(1000000000000), // do not enable on mainnet
+		EnableFuxiPrecompiled: big.NewInt(1000000000000), // do not enable on mainnet
+		RemoveEmptyAccount:    true,
+		Ethash:                new(EthashConfig),
 	}
 
 	// TestnetChainConfig contains the chain parameters to run a node on the test network.
 	TestnetChainConfig = &ChainConfig{
-		ChainId:             big.NewInt(TestNetworkId),
-		PanguBlock:          big.NewInt(0),
-		NuwaBlock:           big.NewInt(616700),  // 2018/07/30
-		FuxiBlock:           big.NewInt(4900000), // 2020/12/30
-		DiffBombDefuseBlock: big.NewInt(5042000), // 2021/03/16
-		EnableClassicTx:     big.NewInt(5260000), // 2021/04/20
-		RemoveEmptyAccount:  true,
-		Ethash:              new(EthashConfig),
+		ChainId:               big.NewInt(TestNetworkId),
+		PanguBlock:            big.NewInt(0),
+		NuwaBlock:             big.NewInt(616700),  // 2018/07/30
+		FuxiBlock:             big.NewInt(4900000), // 2020/12/30
+		DiffBombDefuseBlock:   big.NewInt(5042000), // 2021/03/16
+		EnableClassicTx:       big.NewInt(5260000), // 2021/04/20
+		EnableFuxiPrecompiled: big.NewInt(5330000), // 2021/05/01
+		RemoveEmptyAccount:    true,
+		Ethash:                new(EthashConfig),
 	}
 
 	AllProtocolChanges = &ChainConfig{
 		big.NewInt(DevNetworkId),
+		big.NewInt(0),
 		big.NewInt(0),
 		big.NewInt(0),
 		big.NewInt(0),
@@ -134,8 +138,11 @@ func (c *ChainConfig) String() string {
 	default:
 		engine = "unknown"
 	}
-	return fmt.Sprintf("{ChainID: %v Pangu: %v Nuwa: %v Fuxi: %v DiffBomb: %v, ClassicTx: %v, Engine: %v}",
-		c.ChainId, c.PanguBlock, c.NuwaBlock, c.FuxiBlock, c.DiffBombDefuseBlock, c.EnableClassicTx, engine)
+	return fmt.Sprintf(
+		"{ChainID: %v Pangu: %v Nuwa: %v Fuxi: %v DiffBomb: %v, ClassicTx: %v, FuxiPrecompiled: %v, Engine: %v}",
+		c.ChainId, c.PanguBlock, c.NuwaBlock, c.FuxiBlock, c.DiffBombDefuseBlock,
+		c.EnableClassicTx, c.EnableFuxiPrecompiled, engine,
+	)
 }
 
 // IsPangu returns whether num is either equal to the pangu block or greater.

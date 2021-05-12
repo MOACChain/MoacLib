@@ -32,7 +32,7 @@ import (
 
 // The values in those tests are from the Transaction Tests
 //
-// at github.com/innowells/moac-vnode/tests.
+// at github.com/MOACChain/MoacVnode/tests.
 // emptyAddress is declared in transaxtion_signing_test.go
 // it is used to init the ScsConsensusAddress.
 

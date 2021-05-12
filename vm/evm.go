@@ -1,22 +1,23 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The MOAC-core Authors
+// This file is part of the MOAC-core library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The MOAC-core library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The MOAC-core library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the MOAC-core library. If not, see <http://www.gnu.org/licenses/>.
 
 package vm
 
 import (
+	"fmt"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -25,8 +26,8 @@ import (
 	"github.com/MOACChain/MoacLib/common"
 	"github.com/MOACChain/MoacLib/crypto"
 	"github.com/MOACChain/MoacLib/log"
-	"github.com/MOACChain/MoacLib/types"
 	"github.com/MOACChain/MoacLib/params"
+	"github.com/MOACChain/MoacLib/types"
 
 	"time"
 
@@ -51,6 +52,8 @@ const (
 type ContractsInterface interface {
 	PrecompiledContractsPangu() map[common.Address]PrecompiledContract
 	PrecompiledContractsByzantium() map[common.Address]PrecompiledContract
+	PrecompiledContractsFuxi() map[common.Address]PrecompiledContract
+	PrecompiledContractsByBlock(*big.Int, *params.ChainConfig) map[common.Address]PrecompiledContract
 	RunPrecompiledContract(evm *EVM, snapshot int, p PrecompiledContract, input []byte, contract *Contract, hash *common.Hash) (ret []byte, err error)
 	SystemContractCallAddr() common.Address
 	SystemContractEntryAddr(num *big.Int) common.Address
@@ -77,7 +80,6 @@ type (
 	GetHashFunc func(uint64) common.Hash
 )
 
-
 // CanTransfer checks wether there are enough funds in the address' account to make a transfer.
 // This does not take the necessary gasRemaining in to account to make the transfer valid.
 func CanTransfer(db StateDB, addr common.Address, amount *big.Int) bool {
@@ -98,7 +100,10 @@ func Run(evm *EVM, snapshot int, contract *Contract, input []byte, precompiledCo
 		log.Debugf("[core/vm/evm.go->run] msgHash %v", msgHash)
 	}
 	if contract.CodeAddr != nil {
-		precompiles := precompiledContracts.PrecompiledContractsPangu()
+		precompiles := precompiledContracts.PrecompiledContractsByBlock(
+			evm.BlockNumber,
+			evm.ChainConfig(),
+		)
 		if p := precompiles[*contract.CodeAddr]; p != nil {
 			return precompiledContracts.RunPrecompiledContract(evm, snapshot, p, input, contract, msgHash)
 		}
@@ -282,7 +287,7 @@ func (evm *EVM) Call(
 			to = AccountRef(common.BytesToAddress(input[48:68]))
 			value.SetBytes(input[80:])
 			//gas allos
-			log.Info("delegate tx", "from", curcaller, "to", to, "value", value)
+			log.Debugf("delegate tx from %v, to %v, value: %v", curcaller, to, value)
 		}
 	}
 
@@ -292,7 +297,10 @@ func (evm *EVM) Call(
 	}
 
 	if !evm.StateDB.Exist(to.Address()) {
-		precompiles := precompiledContracts.PrecompiledContractsPangu()
+		precompiles := precompiledContracts.PrecompiledContractsByBlock(
+			evm.BlockNumber,
+			evm.ChainConfig(),
+		)
 		if precompiles[to.Address()] == nil && value.Sign() == 0 {
 			// Calling a non existing account, don't do anything, but ping the tracer
 			if evm.VmConfig.Debug && evm.depth == 0 {
@@ -335,11 +343,12 @@ func (evm *EVM) Call(
 	// above we revert to the snapshot and consume any gas remaining. Additionally
 	// when we're in pangu this also counts for code storage gas errors.
 	if err != nil {
-		log.Error("error running evm", "err", err)
+		log.Warn(fmt.Sprintf("Tx reverted in evm, err: %v, tx: %x", err, msgHash))
 		evm.StateDB.RevertToSnapshot(snapshot)
 	}
-	log.Debugf("input %v", common.Bytes2Hex(input))
-	log.Debugf("Call returning ret %v gasRemaining %v err %v", common.Bytes2Hex(ret), leftOverGas, err)
+
+	log.Debugf("Call tx: %x input %s", msgHash, common.Bytes2Hex(input))
+	log.Debugf("Call tx: %x returning ret %v gasRemaining %v err %v", msgHash, common.Bytes2Hex(ret), leftOverGas, err)
 	return ret, leftOverGas, err
 }
 
@@ -535,7 +544,13 @@ func (evm *EVM) create(caller ContractRef, code []byte, gasRemaining uint64, val
 	log.Debugf("contract gasRemaining %v", contract.GasRemaining)
 	ret, err := Run(evm, snapshot, contract, nil, precompiledContracts, msgHash)
 
-	log.Debugf("after contract creating Run retLen: %d err: %v", len(ret), err)
+	log.Debugf(
+		"after contract creating Run retLen: %d MaxCode: %d, nuwaMaxCode: %d, err: %v",
+		len(ret),
+		params.MaxCodeSize,
+		params.NuwaMaxCodeSize,
+		err,
+	)
 	// check whether the max code size has been exceeded
 	// MOAC set EIP158 as default
 	maxCodeSizeExceeded := len(ret) > params.MaxCodeSize
@@ -645,7 +660,6 @@ func (evm *EVM) CreateSystemContract(sysaddr common.Address, code []byte, precom
 	ret, err = Run(evm, snapshot, contract, nil, precompiledContracts, msgHash)
 	// check whether the max code size has been exceeded
 	// MOAC use EIP158 check
-	// maxCodeSizeExceeded := evm.ChainConfig().IsEIP158(evm.BlockNumber) && len(ret) > params.MaxCodeSize
 	maxCodeSizeExceeded := len(ret) > params.MaxCodeSize
 
 	if evm.ChainConfig().IsNuwa(evm.BlockNumber) {

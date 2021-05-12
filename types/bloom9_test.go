@@ -54,7 +54,7 @@ func TestBloom(t *testing.T) {
 import (
 	"testing"
 
-	"github.com/innowells/moac-vnode/core/state"
+	"github.com/MOACChain/MoacVnode/core/state"
 )
 
 func TestBloom9(t *testing.T) {
