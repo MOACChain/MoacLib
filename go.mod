@@ -9,7 +9,7 @@ require (
 	github.com/go-stack/stack v1.8.0
 	github.com/golang/protobuf v1.5.2
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/holiman/uint256 v1.2.0
+	github.com/holiman/uint256 v1.1.1
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/syndtr/goleveldb v1.0.0
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed
