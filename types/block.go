@@ -18,6 +18,8 @@
 package types
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -30,6 +32,7 @@ import (
 	"github.com/MOACChain/MoacLib/common"
 	"github.com/MOACChain/MoacLib/common/hexutil"
 	"github.com/MOACChain/MoacLib/log"
+	"github.com/MOACChain/MoacLib/params"
 	"github.com/MOACChain/MoacLib/rlp"
 )
 
@@ -129,6 +132,95 @@ func (h *Header) HashNoNonce() common.Hash {
 		h.Time,
 		h.Extra,
 	})
+}
+
+func (b *Block) SignatureSHA() []byte {
+	extraData, _ := b.Header().ExtraData()
+	blssig, _ := (*extraData)[params.BLSSigField]
+	sha32 := sha256.Sum256(blssig)
+	return sha32[:]
+}
+
+func (h *Header) ExtraData() (*map[int][]byte, error) {
+	_data := h.Extra
+	_dataLength := len(_data)
+	_dataMap := make(map[int][]byte)
+
+	// return early if nothing to read
+	if _dataLength < 32+1 {
+		return &_dataMap, nil
+	}
+
+	dataHash := _data[:32]
+	fieldsCount := int(uint8(_data[32]))
+	bIndex := 1 + 32
+	// || hash (32 bytes) || fields Count (1 byte) || { fieldEnum (1 byte) || fieldLength (1 byte) || field data } ||
+	var buffer bytes.Buffer
+	for i := 0; i < fieldsCount && bIndex < _dataLength; i++ {
+		fieldEnum := int(uint8(_data[bIndex]))
+		buffer.WriteByte(_data[bIndex])
+		fieldLength := int(uint8(_data[bIndex+1]))
+		buffer.WriteByte(_data[bIndex+1])
+		_dataMap[fieldEnum] = _data[bIndex+2 : bIndex+2+fieldLength]
+		buffer.Write(_data[bIndex+2 : bIndex+2+fieldLength])
+		bIndex += (2 + fieldLength)
+	}
+	_dataHash := sha256.Sum256(buffer.Bytes())
+	if bytes.Equal(_dataHash[:], dataHash) {
+		return nil, fmt.Errorf("extra data corrupted")
+	}
+	return &_dataMap, nil
+}
+
+func (h *Header) SetExtraData(extraData *map[int][]byte) error {
+	fieldCount := len(*extraData)
+	if fieldCount >= int(params.MaximumExtraFieldsCount) {
+		return fmt.Errorf(
+			"Extra can not have more than %d fields",
+			params.MaximumExtraFieldsCount,
+		)
+	} else if fieldCount == 0 {
+		h.Extra = []byte{}
+	}
+
+	var buffer bytes.Buffer
+	// first byte in 'extra' indicates how may fields we have
+	buffer.WriteByte(byte(uint8(fieldCount)))
+	totalFieldSize := 1
+	for field, fieldData := range *extraData {
+		if field >= int(params.MaximumExtraFieldsCount) {
+			return fmt.Errorf(
+				"Field enum in extra can not exceed 255",
+				params.MaximumExtraFieldsCount,
+			)
+		}
+
+		if len(fieldData) >= int(params.MaximumExtraFieldSize) {
+			return fmt.Errorf(
+				"Field data size can not exceed 255",
+				params.MaximumExtraFieldSize,
+			)
+		}
+
+		// 2 bytes for each field header and its body
+		totalFieldSize += (len(fieldData) + 2)
+		// 32 bytes of data hash at the beginning
+		if totalFieldSize > int(params.MaximumExtraDataSize-32) {
+			return fmt.Errorf(
+				"Total extra data size can not exceed %d",
+				params.MaximumExtraDataSize-32,
+			)
+		}
+
+		buffer.WriteByte(byte(uint8(field)))
+		buffer.WriteByte(byte(uint8(len(fieldData))))
+		buffer.Write(fieldData)
+	}
+	data := common.CopyBytes(buffer.Bytes())
+	dataHash := sha256.Sum256(data)
+	h.Extra = append(dataHash[:], data...)
+	log.Debugf("b.Header.Extra: %x", h.Extra)
+	return nil
 }
 
 // Body is a simple (mutable, non-safe) TxData container for storing and moving

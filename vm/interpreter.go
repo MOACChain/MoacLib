@@ -69,6 +69,7 @@ func NewInterpreter(evm *EVM, cfg Config) *Interpreter {
 	// we'll set the default jump table.
 	if !cfg.JumpTable[STOP].valid {
 		var jt [256]operation
+
 		switch {
 		case evm.chainRules.IsFuxi:
 			jt = fuxiInstructionSet
@@ -164,7 +165,7 @@ func (in *Interpreter) Run(snapshot int, contract *Contract, input []byte, preco
 
 		// if the op is invalid abort the process and return an error
 		if !operation.valid {
-			log.Debugf("!operation.valid[%s] err %v", op, err)
+			log.Errorf("!operation.valid[%s] err: %v", op, err)
 			return nil, ErrInvalidCode
 		}
 

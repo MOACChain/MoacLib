@@ -36,7 +36,7 @@ var (
 )
 
 const (
-	MainNetworkId = 99
+	MainNetworkId = 20210701
 	TestNetworkId = 101
 	DevNetworkId  = 100
 	NetworkId188  = 188
@@ -70,11 +70,11 @@ var (
 	MainnetChainConfig = &ChainConfig{
 		ChainId:               big.NewInt(MainNetworkId),
 		PanguBlock:            big.NewInt(0),
-		NuwaBlock:             big.NewInt(647200),        // 2018/08/08 UTC 12:00
-		FuxiBlock:             big.NewInt(6435000),       // 2021/03/05 ~ 10
-		DiffBombDefuseBlock:   big.NewInt(6462000),       // 2021/03/31
-		EnableClassicTx:       big.NewInt(1000000000000), // do not enable on mainnet
-		EnableFuxiPrecompiled: big.NewInt(1000000000000), // do not enable on mainnet
+		NuwaBlock:             big.NewInt(0),
+		FuxiBlock:             big.NewInt(0),
+		DiffBombDefuseBlock:   big.NewInt(0),
+		EnableClassicTx:       big.NewInt(0),
+		EnableFuxiPrecompiled: big.NewInt(0),
 		RemoveEmptyAccount:    true,
 		Ethash:                new(EthashConfig),
 	}
@@ -83,11 +83,11 @@ var (
 	TestnetChainConfig = &ChainConfig{
 		ChainId:               big.NewInt(TestNetworkId),
 		PanguBlock:            big.NewInt(0),
-		NuwaBlock:             big.NewInt(616700),  // 2018/07/30
-		FuxiBlock:             big.NewInt(4900000), // 2020/12/30
-		DiffBombDefuseBlock:   big.NewInt(5042000), // 2021/03/16
-		EnableClassicTx:       big.NewInt(5260000), // 2021/04/20
-		EnableFuxiPrecompiled: big.NewInt(5330000), // 2021/05/01
+		NuwaBlock:             big.NewInt(0), // 2018/07/30
+		FuxiBlock:             big.NewInt(0), // 2020/12/30
+		DiffBombDefuseBlock:   big.NewInt(0), // 2021/03/16
+		EnableClassicTx:       big.NewInt(0), // 2021/04/20
+		EnableFuxiPrecompiled: big.NewInt(0), // 2021/05/01
 		RemoveEmptyAccount:    true,
 		Ethash:                new(EthashConfig),
 	}

@@ -23,7 +23,6 @@ import (
 //MOAC Need to update the parameters
 const (
 	MaximumTxSize         uint64 = 128 * 1024 // Maximum size of a single tx
-	MaximumExtraDataSize  uint64 = 32         // Maximum size extra data may be after Genesis.
 	ExpByteGas            uint64 = 10         // Times ceil(log256(exponent)) for the EXP instruction.
 	SloadGas              uint64 = 50         // Multiplied by the number of 32-byte words that are copied (round up) for any *COPY operation and added.
 	CallValueTransferGas  uint64 = 9000       // Paid for CALL when the value transfer is non-zero.
@@ -89,6 +88,15 @@ const (
 	Bls12381MapG1Gas          uint64 = 5500   // Gas price for BLS12-381 mapping field element to G1 operation
 	Bls12381MapG2Gas          uint64 = 110000 // Gas price for BLS12-381 mapping field element to G2 operation
 
+	// extra data
+	MaximumExtraFieldsCount uint64 = 256 // Maximum number of fields in extra data.
+	MaximumExtraFieldSize   uint64 = 256 // Maximum size of fields in extra data.
+
+	// enum for fields in header.extradata
+	BLSSigField     int = 1
+	EpochField      int = 2
+	ParentHashField int = 3
+	ProposerSig     int = 4
 )
 
 // Gas discount table for BLS12-381 G1 and G2 multi exponentiation operations
