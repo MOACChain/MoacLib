@@ -100,15 +100,15 @@ type Transaction struct {
  * 2018/04/23 Added Via field as the SCS subchain address.
  */
 type txdata struct {
-	AccountNonce   uint64          `json:"nonce"    gencodec:"required"`
-	SystemContract uint64          `json:"syscnt" gencodec:"required"`
-	Price          *big.Int        `json:"gasPrice" gencodec:"required"`
-	GasLimit       *big.Int        `json:"gas"      gencodec:"required"`
-	Recipient      *common.Address `json:"to"       rlp:"nil"` // nil means contract creation
-	Amount         *big.Int        `json:"value"    gencodec:"required"`
-	Payload        []byte          `json:"input"    gencodec:"required"`
-	ShardingFlag   uint64          `json:"shardingFlag" gencodec:"required"`
-	Via            *common.Address `json:"via"       rlp:"nil"`
+	AccountNonce uint64 `json:"nonce"    gencodec:"required"`
+	//SystemContract uint64          `json:"syscnt" gencodec:"required"`
+	Price     *big.Int        `json:"gasPrice" gencodec:"required"`
+	GasLimit  *big.Int        `json:"gas"      gencodec:"required"`
+	Recipient *common.Address `json:"to"       rlp:"nil"` // nil means contract creation
+	Amount    *big.Int        `json:"value"    gencodec:"required"`
+	Payload   []byte          `json:"input"    gencodec:"required"`
+	//ShardingFlag   uint64          `json:"shardingFlag" gencodec:"required"`
+	//Via            *common.Address `json:"via"       rlp:"nil"`
 
 	// Signature values
 	V *big.Int `json:"v" gencodec:"required"`
@@ -144,10 +144,6 @@ func (tdata *txdata) SetIsClassic(isClassic bool) {
 	}
 }
 
-func (tdata *txdata) SetShardingFlag(inflag uint64) {
-	tdata.ShardingFlag = inflag
-}
-
 /*
  * Add the ControlFlag and ScsConsensusAddr
  * seems not used
@@ -164,37 +160,29 @@ type txdataMarshaling struct {
 	S            *hexutil.Big
 }
 
-func NewTransaction(nonce uint64, to common.Address, amount, gasLimit, gasPrice *big.Int, shardingFlag uint64, via *common.Address, data []byte) *Transaction {
-	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, shardingFlag, via, data)
+func NewTransaction(nonce uint64, to common.Address, amount, gasLimit, gasPrice *big.Int, data []byte) *Transaction {
+	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, data)
 }
 
-func NewContractCreation(nonce uint64, amount, gasLimit, gasPrice *big.Int, shardingFlag uint64, via *common.Address, data []byte) *Transaction {
-	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, shardingFlag, via, data)
+func NewContractCreation(nonce uint64, amount, gasLimit, gasPrice *big.Int, data []byte) *Transaction {
+	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, data)
 }
 
-func newTransaction(nonce uint64, to *common.Address, amount, gasLimit, gasPrice *big.Int, shardingFlag uint64, via *common.Address, data []byte) *Transaction {
+func newTransaction(nonce uint64, to *common.Address, amount, gasLimit, gasPrice *big.Int, data []byte) *Transaction {
 	if len(data) > 0 {
 		data = common.CopyBytes(data)
 	}
 
 	d := txdata{
-		AccountNonce:   nonce,
-		Recipient:      to,
-		Payload:        data,
-		Amount:         new(big.Int),
-		GasLimit:       new(big.Int),
-		Price:          new(big.Int),
-		V:              new(big.Int),
-		R:              new(big.Int),
-		S:              new(big.Int),
-		SystemContract: 0,
-		ShardingFlag:   shardingFlag,
-		Via:            via,
-	}
-
-	//Set new shardingFlag
-	if shardingFlag > 0 {
-		d.SetShardingFlag(shardingFlag)
+		AccountNonce: nonce,
+		Recipient:    to,
+		Payload:      data,
+		Amount:       new(big.Int),
+		GasLimit:     new(big.Int),
+		Price:        new(big.Int),
+		V:            new(big.Int),
+		R:            new(big.Int),
+		S:            new(big.Int),
 	}
 
 	if amount != nil {
@@ -304,11 +292,6 @@ func (tx *Transaction) UnmarshalClassicRLP(encodeTx hexutil.Bytes) error {
 	tx.TxData.R = classictxdata.R
 	tx.TxData.S = classictxdata.S
 
-	// set defaults to other moac fields
-	tx.TxData.Via = nil
-	tx.TxData.SystemContract = 0
-	tx.TxData.ShardingFlag = 0
-
 	return nil
 }
 
@@ -320,15 +303,6 @@ func (tx *Transaction) Nonce() uint64            { return tx.TxData.AccountNonce
 func (tx *Transaction) CheckNonce() bool         { return true }
 func (tx *Transaction) UpdateNonce(nonce uint64) { tx.TxData.AccountNonce = nonce }
 func (tx *Transaction) IsClassic() bool          { return tx.TxData.IsClassic() }
-func (tx *Transaction) Via() *common.Address     { return tx.TxData.Via }
-
-//functions to pass flag values
-func (tx *Transaction) ShardingFlag() uint64 { return tx.TxData.ShardingFlag }
-func (tx *Transaction) SystemFlag() uint64   { return tx.TxData.SystemContract }
-
-//Process the controlFlag in tx.TxData
-func (tx *Transaction) SetShardingFlag(inflag uint64) { tx.TxData.ShardingFlag = inflag }
-func (tx *Transaction) SetSystemFlag(inflag uint64)   { tx.TxData.SystemContract = inflag }
 
 // To returns the recipient address of the transaction.
 // It returns nil if the transaction is a contract creation.
@@ -389,11 +363,8 @@ func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 		amount:          new(big.Int).Set(tx.TxData.Amount),
 		data:            tx.TxData.Payload,
 		checkNonce:      true,
-		system:          tx.TxData.SystemContract,
 		autoFlush:       autoFlush,
 		waitBlockNumber: blk,
-		shardFlag:       tx.TxData.ShardingFlag,
-		via:             tx.TxData.Via,
 		msgHash:         &msgHash,
 	}
 
@@ -470,41 +441,8 @@ func (tx *Transaction) String() string {
 	} else {
 		to = fmt.Sprintf("%x", tx.TxData.Recipient[:])
 	}
-	if tx.TxData.Via == nil {
-		return fmt.Sprintf(`
-		TX(%x)
-		IsClassic: %t
-		ReplayPtc: %t(V=%d)
-		Contract:  %v
-		From:      %s
-		To:        %s
-		Nonce:     %v
-		GasPrice:  %#x
-		GasLimit   %#x
-		Value:     %#x
-		Data:      0x%x
-		SysCnt:	   %v
-		ShardingFlag: %v
-		Via: %v
-	`,
-			tx.Hash(),
-			tx.TxData.IsClassic(),
-			tx.Protected(),
-			tx.TxData.Vx(),
-			tx.TxData.Recipient == nil,
-			from,
-			to,
-			tx.TxData.AccountNonce,
-			tx.TxData.Price,
-			tx.TxData.GasLimit,
-			tx.TxData.Amount,
-			tx.TxData.Payload,
-			tx.TxData.SystemContract,
-			tx.TxData.ShardingFlag,
-			tx.TxData.Via,
-		)
-	} else {
-		return fmt.Sprintf(`
+
+	return fmt.Sprintf(`
 		TX(%x)
 		Contract: %v
 		From:     %s
@@ -514,25 +452,17 @@ func (tx *Transaction) String() string {
 		GasLimit  %#x
 		Value:    %#x
 		Data:     0x%x
-		SysCnt:	  %v
-		ShardingFlag: %v
-		Via: %v
 	`,
-			tx.Hash(),
-			tx.TxData.Recipient == nil,
-			from,
-			to,
-			tx.TxData.AccountNonce,
-			tx.TxData.Price,
-			tx.TxData.GasLimit,
-			tx.TxData.Amount,
-			tx.TxData.Payload,
-			tx.TxData.SystemContract,
-			tx.TxData.ShardingFlag,
-			tx.TxData.Via.String(),
-		)
-	}
-
+		tx.Hash(),
+		tx.TxData.Recipient == nil,
+		from,
+		to,
+		tx.TxData.AccountNonce,
+		tx.TxData.Price,
+		tx.TxData.GasLimit,
+		tx.TxData.Amount,
+		tx.TxData.Payload,
+	)
 }
 
 // Transaction slice type for basic sorting.

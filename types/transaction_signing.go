@@ -95,11 +95,6 @@ func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, err
 // not match the signer used in the current call.
 //
 func Sender(signer Signer, tx *Transaction) (common.Address, error) {
-	//if system contract, return address {100}
-	if tx.TxData.SystemContract > 0 {
-		return common.BytesToAddress([]byte{100}), nil
-	}
-
 	if sc := tx.from.Load(); sc != nil {
 		sigCache := sc.(sigCache)
 		// If the signer used to derive from in a previous
@@ -223,14 +218,11 @@ func (ps PanguSigner) Hash(tx *Transaction) common.Hash {
 	} else {
 		return common.RlpHash([]interface{}{
 			tx.TxData.AccountNonce,
-			tx.TxData.SystemContract,
 			tx.TxData.Price,
 			tx.TxData.GasLimit,
 			tx.TxData.Recipient,
 			tx.TxData.Amount,
 			tx.TxData.Payload,
-			tx.TxData.ShardingFlag,
-			tx.TxData.Via,
 			ps.chainId,
 			uint(0),
 			uint(0),
