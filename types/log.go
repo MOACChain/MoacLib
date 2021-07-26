@@ -162,3 +162,15 @@ func (l *LogForStorage) DecodeRLP(s *rlp.Stream) error {
 	}
 	return err
 }
+
+func ConvertLog(log *Log, logNew *LogNew) {
+	logNew.Address = log.Address
+	logNew.Topics = log.Topics
+	logNew.Data = log.Data
+	logNew.BlockNumber = log.BlockNumber
+	logNew.TxHash = log.TxHash
+	logNew.TxIndex = log.TxIndex
+	logNew.BlockHash = log.BlockHash
+	logNew.Index = log.Index
+	logNew.Removed = log.Removed
+}
