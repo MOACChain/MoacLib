@@ -21,13 +21,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/holiman/uint256"
 	"github.com/MOACChain/MoacLib/common"
 	"github.com/MOACChain/MoacLib/common/math"
 	"github.com/MOACChain/MoacLib/crypto"
 	"github.com/MOACChain/MoacLib/log"
-	"github.com/MOACChain/MoacLib/types"
 	"github.com/MOACChain/MoacLib/params"
+	"github.com/MOACChain/MoacLib/types"
+	"github.com/holiman/uint256"
 )
 
 var (
@@ -697,6 +697,7 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 		stack.push(uint256.NewInt().SetUint64(1))
 	}
 	if err == nil || err == errExecutionReverted {
+		ret = common.CopyBytes(ret)
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	contract.GasRemaining += returnGas
@@ -731,6 +732,7 @@ func opCallCode(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 		stack.push(uint256.NewInt().SetUint64(1))
 	}
 	if err == nil || err == errExecutionReverted {
+		ret = common.CopyBytes(ret)
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	contract.GasRemaining += returnGas
@@ -752,6 +754,7 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 		stack.push(uint256.NewInt().SetUint64(1))
 	}
 	if err == nil || err == errExecutionReverted {
+		ret = common.CopyBytes(ret)
 		memory.Set(outOffset.Uint64(), outSize.Uint64(), ret)
 	}
 	contract.GasRemaining += returnGas
@@ -781,6 +784,7 @@ func opStaticCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 		stack.push(uint256.NewInt().SetUint64(1))
 	}
 	if err == nil || err == errExecutionReverted {
+		ret = common.CopyBytes(ret)
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	contract.GasRemaining += returnGas

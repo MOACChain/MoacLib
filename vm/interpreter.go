@@ -214,7 +214,7 @@ func (in *Interpreter) Run(snapshot int, contract *Contract, input []byte, preco
 		// if the operation clears the return data (e.g. it has returning data)
 		// set the last return to the result of the operation.
 		if operation.returns {
-			in.returnData = res
+			in.returnData = common.CopyBytes(res)
 		}
 
 		switch {
