@@ -428,7 +428,11 @@ func (self *StateDB) createObject(addr common.Address) (newobj, prev *stateObjec
 		self.journal = append(self.journal, resetObjectChange{prev: prev})
 	}
 	self.setStateObject(newobj)
-	return newobj, prev
+
+	if prev != nil && !prev.deleted {
+		return newobj, prev
+	}
+	return newobj, nil
 }
 
 // CreateAccount explicitly creates a state object. If a state object with the address
